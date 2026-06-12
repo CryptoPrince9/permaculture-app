@@ -171,6 +171,7 @@ interface TaxonDetail {
     name: string;
     commonName: string;
     photoBase64: string;
+    photoUrl?: string;
 }
 
 interface PDFReportProps {
@@ -1345,8 +1346,8 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <View style={styles.photoGrid}>
                     {ecology?.taxaDetails && ecology.taxaDetails.slice(0, 2).map((taxon, idx) => (
                         <View key={idx} style={styles.photoCard}>
-                            {taxon.photoBase64 ? (
-                                <Image src={taxon.photoBase64} style={styles.photoImage} />
+                            {taxon.photoBase64 || taxon.photoUrl ? (
+                                <Image src={taxon.photoBase64 || taxon.photoUrl} style={styles.photoImage} />
                             ) : (
                                 <View style={{ width: '100%', height: 100, backgroundColor: '#cbd5e1', borderRadius: 4, marginBottom: 6, justifyContent: 'center', alignItems: 'center' }}>
                                     <Text style={{ fontSize: 8, color: '#475569' }}>No Photo Available</Text>
@@ -1375,8 +1376,8 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <View style={styles.photoGrid}>
                     {ecology?.taxaDetails && ecology.taxaDetails.slice(2, 4).map((taxon, idx) => (
                         <View key={idx} style={styles.photoCard}>
-                            {taxon.photoBase64 ? (
-                                <Image src={taxon.photoBase64} style={styles.photoImage} />
+                            {taxon.photoBase64 || taxon.photoUrl ? (
+                                <Image src={taxon.photoBase64 || taxon.photoUrl} style={styles.photoImage} />
                             ) : (
                                 <View style={{ width: '100%', height: 100, backgroundColor: '#cbd5e1', borderRadius: 4, marginBottom: 6, justifyContent: 'center', alignItems: 'center' }}>
                                     <Text style={{ fontSize: 8, color: '#475569' }}>No Photo Available</Text>

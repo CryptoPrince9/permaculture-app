@@ -179,19 +179,59 @@ export default function Report({ location, boundaryCoords, userData, config }: R
           addLog(`SYSTEM RECOVERY: API fetch issue caught (${err.message}). Activating local offline stubs...`);
           
           const absLat = Math.abs(location.lat);
+          const latVal = location.lat;
+          const lngVal = location.lng;
+
+          const isSonoran = latVal >= 24 && latVal <= 40 && lngVal >= -125 && lngVal <= -100;
+          const isAustralian = latVal >= -38 && latVal <= -15 && lngVal >= 110 && lngVal <= 155;
+          const isArabian = latVal >= 15 && latVal <= 35 && lngVal >= 30 && lngVal <= 60;
+
           let zoneName = "Sahelian";
           let fallbackClimate = { temperature: 24.5, precipitation: 1.2, windSpeed: 12.5, windDirection: 45, solarRadiation: 18.2 };
           let fallbackEcology = { 
             taxa: ['Acacia tortilis', 'Adansonia digitata', 'Vulpes zerda', 'Camelus dromedarius'],
             taxaDetails: [
               { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400' },
-              { name: 'Adansonia digitata', commonName: 'African Baobab', photoBase64: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400' },
-              { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoBase64: 'https://images.unsplash.com/photo-1574063413132-355dbfd83e82?w=400' },
-              { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoBase64: 'https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=400' }
+              { name: 'Adansonia digitata', commonName: 'African Baobab', photoBase64: 'https://images.unsplash.com/photo-1559637283-ecf9fe8ba0c4?w=400' },
+              { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoBase64: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400' },
+              { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoBase64: 'https://images.unsplash.com/photo-1662841238473-f4b137e123cb?w=400' }
             ]
           };
 
-          if (absLat > 35) {
+          if (isSonoran) {
+            zoneName = "Sonoran";
+            fallbackEcology = {
+              taxa: ['Olneya tesota', 'Prosopis glandulosa', 'Odocoileus hemionus', 'Geococcyx californianus'],
+              taxaDetails: [
+                { name: 'Olneya tesota', commonName: 'Desert Ironwood', photoBase64: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400' },
+                { name: 'Prosopis glandulosa', commonName: 'Honey Mesquite', photoBase64: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400' },
+                { name: 'Odocoileus hemionus', commonName: 'Mule Deer', photoBase64: 'https://images.unsplash.com/photo-1484406566174-9da000fda645?w=400' },
+                { name: 'Geococcyx californianus', commonName: 'Greater Roadrunner', photoBase64: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400' }
+              ]
+            };
+          } else if (isAustralian) {
+            zoneName = "Australian";
+            fallbackEcology = {
+              taxa: ['Acacia aneura', 'Eucalyptus camaldulensis', 'Macropus rufus', 'Dromaius novaehollandiae'],
+              taxaDetails: [
+                { name: 'Acacia aneura', commonName: 'Mulga Tree', photoBase64: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400' },
+                { name: 'Eucalyptus camaldulensis', commonName: 'Red River Gum', photoBase64: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400' },
+                { name: 'Macropus rufus', commonName: 'Red Kangaroo', photoBase64: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=400' },
+                { name: 'Dromaius novaehollandiae', commonName: 'Emu', photoBase64: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400' }
+              ]
+            };
+          } else if (isArabian) {
+            zoneName = "Arabian";
+            fallbackEcology = {
+              taxa: ['Acacia tortilis', 'Phoenix dactylifera', 'Oryx leucoryx', 'Chlamydotis macqueenii'],
+              taxaDetails: [
+                { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400' },
+                { name: 'Phoenix dactylifera', commonName: 'Date Palm', photoBase64: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400' },
+                { name: 'Oryx leucoryx', commonName: 'Arabian Oryx', photoBase64: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=400' },
+                { name: 'Chlamydotis macqueenii', commonName: 'Macqueen\'s Bustard', photoBase64: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400' }
+              ]
+            };
+          } else if (absLat > 35) {
             zoneName = "Temperate";
             fallbackClimate = { temperature: 14.2, precipitation: 2.1, windSpeed: 15.0, windDirection: 270, solarRadiation: 12.5 };
             fallbackEcology = {
@@ -229,6 +269,17 @@ export default function Report({ location, boundaryCoords, userData, config }: R
             };
           }
 
+          let guildFileName = 'nano_banana_guild.png';
+          if (zoneName === 'Tropical') {
+            guildFileName = 'tropical_banana_guild.png';
+          } else if (zoneName === 'Temperate') {
+            guildFileName = 'temperate_apple_guild.png';
+          } else if (zoneName === 'Mediterranean/Subtropical') {
+            guildFileName = 'mediterranean_olive_guild.png';
+          }
+
+          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
           const fallbackElevation = { elevation: 45.0, slope: 1.2 };
           const fallbackSoil = { ph: 6.8, organicCarbon: 4.5 };
 
@@ -241,12 +292,12 @@ export default function Report({ location, boundaryCoords, userData, config }: R
             topoMap: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
             streetMap: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800',
             hillshadeMap: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800',
-            bananaGuild: 'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=800',
-            waterHarvesting: 'https://images.unsplash.com/photo-1508873696983-2df519f0397e?w=800',
-            gravityDrip: 'https://images.unsplash.com/photo-1463123081488-729f378ea36a?w=800',
-            contourSwales: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800',
-            concentricZoning: 'https://images.unsplash.com/photo-1533038590840-1cde6b66b706?w=800',
-            functionalConcept: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800'
+            bananaGuild: `${origin}/images/${guildFileName}`,
+            waterHarvesting: `${origin}/images/water_harvesting.jpg`,
+            gravityDrip: `${origin}/images/gravity_drip.jpg`,
+            contourSwales: `${origin}/images/contour_swales.jpg`,
+            concentricZoning: `${origin}/images/concentric_zoning.jpg`,
+            functionalConcept: `${origin}/images/functional_concept.jpg`
           };
           setMaps(fallbackMaps);
           setGeneratedReport(generateReportContent(fallbackClimate, fallbackElevation, fallbackSoil, fallbackEcology, location.lat, location.lng));

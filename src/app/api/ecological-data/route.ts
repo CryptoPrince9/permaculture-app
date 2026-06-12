@@ -176,49 +176,97 @@ export async function GET(request: Request) {
         photoBase64: string;
       }
 
-      const zoneFallbacks: Record<string, { taxa: string[], taxaDetails: TaxonFallback[] }> = {
-        Arid: {
+      const getFallbackEcology = (latVal: number, lngVal: number, zoneVal: string) => {
+        if (zoneVal === 'Tropical') {
+          return {
+            taxa: ['Mangifera indica', 'Persea americana', 'Panthera onca', 'Ramphastos toco'],
+            taxaDetails: [
+              { name: 'Mangifera indica', commonName: 'Mango Tree', photoUrl: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5cf?w=400', photoBase64: '' },
+              { name: 'Persea americana', commonName: 'Avocado Tree', photoUrl: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400', photoBase64: '' },
+              { name: 'Panthera onca', commonName: 'Jaguar', photoUrl: 'https://images.unsplash.com/photo-1551845187-578f244192b0?w=400', photoBase64: '' },
+              { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoUrl: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400', photoBase64: '' }
+            ]
+          };
+        }
+        
+        if (zoneVal === 'Temperate') {
+          return {
+            taxa: ['Malus domestica', 'Symphytum officinale', 'Vulpes vulpes', 'Sciurus carolinensis'],
+            taxaDetails: [
+              { name: 'Malus domestica', commonName: 'Apple Tree', photoUrl: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?w=400', photoBase64: '' },
+              { name: 'Symphytum officinale', commonName: 'Comfrey', photoUrl: 'https://images.unsplash.com/photo-1508873696983-2df519f0397e?w=400', photoBase64: '' },
+              { name: 'Vulpes vulpes', commonName: 'Red Fox', photoUrl: 'https://images.unsplash.com/photo-1470093851219-69951fcbb533?w=400', photoBase64: '' },
+              { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoUrl: 'https://images.unsplash.com/photo-1504244729573-6196d76f303c?w=400', photoBase64: '' }
+            ]
+          };
+        }
+        
+        if (zoneVal === 'Subtropical') {
+          return {
+            taxa: ['Olea europaea', 'Ficus carica', 'Lynx pardinus', 'Genetta genetta'],
+            taxaDetails: [
+              { name: 'Olea europaea', commonName: 'Olive Tree', photoUrl: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=400', photoBase64: '' },
+              { name: 'Ficus carica', commonName: 'Common Fig', photoUrl: 'https://images.unsplash.com/photo-1598965675045-45c5e72c7d05?w=400', photoBase64: '' },
+              { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoUrl: 'https://images.unsplash.com/photo-1602491453977-18a86085a44f?w=400', photoBase64: '' },
+              { name: 'Genetta genetta', commonName: 'Common Genet', photoUrl: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=400', photoBase64: '' }
+            ]
+          };
+        }
+        
+        // Arid sub-classification
+        const isSonoran = latVal >= 24 && latVal <= 40 && lng >= -125 && lng <= -100;
+        const isAustralian = latVal >= -38 && latVal <= -15 && lng >= 110 && lng <= 155;
+        const isArabian = latVal >= 15 && latVal <= 35 && lng >= 30 && lng <= 60;
+        
+        if (isSonoran) {
+          return {
+            taxa: ['Olneya tesota', 'Prosopis glandulosa', 'Odocoileus hemionus', 'Geococcyx californianus'],
+            taxaDetails: [
+              { name: 'Olneya tesota', commonName: 'Desert Ironwood', photoUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400', photoBase64: '' },
+              { name: 'Prosopis glandulosa', commonName: 'Honey Mesquite', photoUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400', photoBase64: '' },
+              { name: 'Odocoileus hemionus', commonName: 'Mule Deer', photoUrl: 'https://images.unsplash.com/photo-1484406566174-9da000fda645?w=400', photoBase64: '' },
+              { name: 'Geococcyx californianus', commonName: 'Greater Roadrunner', photoUrl: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400', photoBase64: '' }
+            ]
+          };
+        }
+        
+        if (isAustralian) {
+          return {
+            taxa: ['Acacia aneura', 'Eucalyptus camaldulensis', 'Macropus rufus', 'Dromaius novaehollandiae'],
+            taxaDetails: [
+              { name: 'Acacia aneura', commonName: 'Mulga Tree', photoUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400', photoBase64: '' },
+              { name: 'Eucalyptus camaldulensis', commonName: 'Red River Gum', photoUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400', photoBase64: '' },
+              { name: 'Macropus rufus', commonName: 'Red Kangaroo', photoUrl: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=400', photoBase64: '' },
+              { name: 'Dromaius novaehollandiae', commonName: 'Emu', photoUrl: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400', photoBase64: '' }
+            ]
+          };
+        }
+        
+        if (isArabian) {
+          return {
+            taxa: ['Acacia tortilis', 'Phoenix dactylifera', 'Oryx leucoryx', 'Chlamydotis macqueenii'],
+            taxaDetails: [
+              { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400', photoBase64: '' },
+              { name: 'Phoenix dactylifera', commonName: 'Date Palm', photoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400', photoBase64: '' },
+              { name: 'Oryx leucoryx', commonName: 'Arabian Oryx', photoUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=400', photoBase64: '' },
+              { name: 'Chlamydotis macqueenii', commonName: 'Macqueen\'s Bustard', photoUrl: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400', photoBase64: '' }
+            ]
+          };
+        }
+        
+        // Sahelian (Default)
+        return {
           taxa: ['Acacia tortilis', 'Adansonia digitata', 'Vulpes zerda', 'Camelus dromedarius'],
           taxaDetails: [
             { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400', photoBase64: '' },
-            { name: 'Adansonia digitata', commonName: 'African Baobab', photoUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400', photoBase64: '' },
-            { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoUrl: 'https://images.unsplash.com/photo-1574063413132-355dbfd83e82?w=400', photoBase64: '' },
-            { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoUrl: 'https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=400', photoBase64: '' }
+            { name: 'Adansonia digitata', commonName: 'African Baobab', photoUrl: 'https://images.unsplash.com/photo-1559637283-ecf9fe8ba0c4?w=400', photoBase64: '' },
+            { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400', photoBase64: '' },
+            { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoUrl: 'https://images.unsplash.com/photo-1662841238473-f4b137e123cb?w=400', photoBase64: '' }
           ]
-        },
-        Tropical: {
-          taxa: ['Mangifera indica', 'Persea americana', 'Panthera onca', 'Ramphastos toco'],
-          taxaDetails: [
-            { name: 'Mangifera indica', commonName: 'Mango Tree', photoUrl: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5cf?w=400', photoBase64: '' },
-            { name: 'Persea americana', commonName: 'Avocado Tree', photoUrl: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400', photoBase64: '' },
-            { name: 'Panthera onca', commonName: 'Jaguar', photoUrl: 'https://images.unsplash.com/photo-1551845187-578f244192b0?w=400', photoBase64: '' },
-            { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoUrl: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400', photoBase64: '' }
-          ]
-        },
-        Temperate: {
-          taxa: ['Malus domestica', 'Symphytum officinale', 'Vulpes vulpes', 'Sciurus carolinensis'],
-          taxaDetails: [
-            { name: 'Malus domestica', commonName: 'Apple Tree', photoUrl: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?w=400', photoBase64: '' },
-            { name: 'Symphytum officinale', commonName: 'Comfrey', photoUrl: 'https://images.unsplash.com/photo-1508873696983-2df519f0397e?w=400', photoBase64: '' },
-            { name: 'Vulpes vulpes', commonName: 'Red Fox', photoUrl: 'https://images.unsplash.com/photo-1470093851219-69951fcbb533?w=400', photoBase64: '' },
-            { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoUrl: 'https://images.unsplash.com/photo-1504244729573-6196d76f303c?w=400', photoBase64: '' }
-          ]
-        },
-        Subtropical: {
-          taxa: ['Olea europaea', 'Ficus carica', 'Lynx pardinus', 'Genetta genetta'],
-          taxaDetails: [
-            { name: 'Olea europaea', commonName: 'Olive Tree', photoUrl: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=400', photoBase64: '' },
-            { name: 'Ficus carica', commonName: 'Common Fig', photoUrl: 'https://images.unsplash.com/photo-1598965675045-45c5e72c7d05?w=400', photoBase64: '' },
-            { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoUrl: 'https://images.unsplash.com/photo-1602491453977-18a86085a44f?w=400', photoBase64: '' },
-            { name: 'Genetta genetta', commonName: 'Common Genet', photoUrl: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=400', photoBase64: '' }
-          ]
-        }
+        };
       };
-      
-      let ecology = {
-        taxa: zoneFallbacks[zone].taxa,
-        taxaDetails: [...zoneFallbacks[zone].taxaDetails]
-      };
+
+      let ecology = getFallbackEcology(lat, lng, zone);
       
       try {
         // Fetch Plants (Plantae) and Animals (Aves, Mammalia, etc.) in parallel
@@ -280,12 +328,12 @@ export async function GET(request: Request) {
             if (!item.photoBase64) {
               let urlToFetch = item.photoUrl;
               if (!urlToFetch) {
-                // Try to map name back to zoneFallbacks
-                const defaultItem = zoneFallbacks[zone].taxaDetails.find(d => d.name === item.name);
+                // Try to map name back to fallbacks
+                const defaultItem = getFallbackEcology(lat, lng, zone).taxaDetails.find(d => d.name === item.name);
                 urlToFetch = defaultItem?.photoUrl || '';
               }
               const base64 = urlToFetch ? await fetchBase64Image(urlToFetch) : '';
-              return { name: item.name, commonName: item.commonName, photoBase64: base64 };
+              return { name: item.name, commonName: item.commonName, photoUrl: urlToFetch, photoBase64: base64 };
             }
             return item;
           });
@@ -350,18 +398,7 @@ export async function GET(request: Request) {
           fetchBase64Image(reliefUrl)
         ]);
 
-        const loadBase64Asset = (fileName: string, mime: string = 'image/jpeg'): string => {
-          try {
-            const filePath = path.join(process.cwd(), 'public/images', fileName);
-            if (fs.existsSync(filePath)) {
-              const buffer = fs.readFileSync(filePath);
-              return `data:${mime};base64,${buffer.toString('base64')}`;
-            }
-          } catch (err) {
-            console.error(`Error loading asset ${fileName}:`, err);
-          }
-          return '';
-        };
+        const origin = new URL(request.url).origin;
 
         const clim = await climatePromise;
         const absLat = Math.abs(lat);
@@ -383,7 +420,6 @@ export async function GET(request: Request) {
         }
 
         let guildFileName = 'nano_banana_guild.png';
-        let guildMime = 'image/png';
         if (climateZone === 'Tropical') {
           guildFileName = 'tropical_banana_guild.png';
         } else if (climateZone === 'Temperate') {
@@ -397,12 +433,12 @@ export async function GET(request: Request) {
           topoMap: topoB64,
           streetMap: streetB64,
           hillshadeMap: reliefB64,
-          bananaGuild: loadBase64Asset(guildFileName, guildMime),
-          waterHarvesting: loadBase64Asset('water_harvesting.jpg'),
-          gravityDrip: loadBase64Asset('gravity_drip.jpg'),
-          contourSwales: loadBase64Asset('contour_swales.jpg'),
-          concentricZoning: loadBase64Asset('concentric_zoning.jpg'),
-          functionalConcept: loadBase64Asset('functional_concept.jpg')
+          bananaGuild: `${origin}/images/${guildFileName}`,
+          waterHarvesting: `${origin}/images/water_harvesting.jpg`,
+          gravityDrip: `${origin}/images/gravity_drip.jpg`,
+          contourSwales: `${origin}/images/contour_swales.jpg`,
+          concentricZoning: `${origin}/images/concentric_zoning.jpg`,
+          functionalConcept: `${origin}/images/functional_concept.jpg`
         };
       } catch (err) {
         console.error('Server-side map compilation issue:', err);
