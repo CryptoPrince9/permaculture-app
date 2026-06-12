@@ -198,9 +198,13 @@ interface PDFReportProps {
         concentricZoning?: string;
         functionalConcept?: string;
     } | null;
+    config?: {
+        methodology: string;
+        financialStrategy: string[];
+    };
 }
 
-const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology, userData, sunData, generatedReport, maps }: PDFReportProps) => {
+const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology, userData, sunData, generatedReport, maps, config }: PDFReportProps) => {
     const latStr = location ? `${Math.abs(location.lat).toFixed(5)}°${location.lat >= 0 ? 'N' : 'S'}` : "14.43204°N";
     const lngStr = location ? `${Math.abs(location.lng).toFixed(5)}°${location.lng >= 0 ? 'E' : 'W'}` : "16.25148°W";
 
@@ -621,6 +625,95 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
         return `M ${x1} ${y1} Q ${xm} ${ym} ${x2} ${y2}`;
     };
 
+    const getElevationAtY = (yPercent: number) => {
+        const centerElev = elevation ? elevation.elevation : 45.0;
+        const slopeVal = elevation ? elevation.slope : 1.2;
+        const totalHeightMeters = (maxLat - minLat) * 111320;
+        const diffMeters = (0.5 - yPercent) * totalHeightMeters * (slopeVal / 100);
+        return centerElev + diffMeters;
+    };
+
+    const getContourLineData = (yPercent: number) => {
+        const path = getSwalePath(yPercent);
+        let x = 200;
+        let y = 100;
+        if (boundaryCoords && boundaryCoords.length >= 3) {
+            const lats = boundaryCoords.map(c => c.lat);
+            const lngs = boundaryCoords.map(c => c.lng);
+            const minB_Lng = Math.min(...lngs);
+            const maxB_Lng = Math.max(...lngs);
+            const minB_Lat = Math.min(...lats);
+            const maxB_Lat = Math.max(...lats);
+            
+            const midLng = (minB_Lng + maxB_Lng) / 2;
+            const latVal = minB_Lat + (maxB_Lat - minB_Lat) * yPercent;
+            
+            x = projectLng(midLng);
+            y = projectLat(latVal - (maxB_Lat - minB_Lat) * 0.025);
+        } else {
+            const latVal = minLat + (maxLat - minLat) * yPercent;
+            y = projectLat(latVal) + 5;
+        }
+        
+        const elev = getElevationAtY(yPercent);
+        return { path, labelX: x, labelY: y, elev: `${elev.toFixed(1)}m` };
+    };
+
+    const getCapexDetails = () => {
+        const slopeVal = elevation ? elevation.slope : 1.2;
+        const hectares = Math.max(0.1, calculatedArea / 10000); // at least 0.1 ha for calculations
+        const strategies = config?.financialStrategy || [];
+        
+        const isZeroCapex = strategies.includes('zero-capex');
+        const isMaxYield = strategies.includes('max-yield');
+        const isPhased = strategies.includes('phased');
+        
+        // Phase 1 (Earthworks)
+        let p1Base = 1500;
+        if (isZeroCapex) p1Base = 600;
+        else if (isMaxYield) p1Base = 3000;
+        
+        // Add slope complexity factor: slope > 5% increases earthworks cost by 12% per degree of slope
+        let slopeMult = 1.0;
+        if (slopeVal > 5) {
+            slopeMult = 1.0 + (slopeVal - 5) * 0.12;
+        }
+        let p1Cost = p1Base * hectares * slopeMult;
+        p1Cost = Math.max(isZeroCapex ? 250 : 600, p1Cost);
+        
+        // Phase 2 (Pioneer planting / soils)
+        let p2Base = 800;
+        if (isZeroCapex) p2Base = 300;
+        else if (isMaxYield) p2Base = 1600;
+        let p2Cost = p2Base * hectares;
+        p2Cost = Math.max(isZeroCapex ? 120 : 300, p2Cost);
+        
+        // Phase 3 (Irrigation & Orchard)
+        let p3Base = 2200;
+        if (isZeroCapex) p3Base = 900;
+        else if (isMaxYield) p3Base = 4500;
+        let p3Cost = p3Base * hectares;
+        p3Cost = Math.max(isZeroCapex ? 350 : 800, p3Cost);
+        
+        if (isPhased) {
+            p3Cost = p3Cost * 0.85;
+        }
+        
+        return {
+            phase1: Math.round(p1Cost),
+            phase2: Math.round(p2Cost),
+            phase3: Math.round(p3Cost),
+            total: Math.round(p1Cost + p2Cost + p3Cost),
+            hectares,
+            isZeroCapex,
+            isMaxYield,
+            isPhased,
+            slopeVal
+        };
+    };
+
+    const capex = getCapexDetails();
+
     // NE Windbreak path
     const getWindbreakPath = () => {
         if (!boundaryCoords || boundaryCoords.length < 3) {
@@ -870,10 +963,13 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 </Text>
                 
                 <View style={{ width: '100%', height: 240, position: 'relative', marginVertical: 15, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#e7e5e4' }}>
+                    {maps?.satelliteMap && (
+                        <Image src={maps.satelliteMap} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
                     {maps?.hillshadeMap ? (
-                        <Image src={maps.hillshadeMap} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <Image src={maps.hillshadeMap} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
                     ) : (
-                        <View style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#fafaf9' }} />
+                        <View style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#fafaf9', opacity: maps?.satelliteMap ? 0 : 1 }} />
                     )}
                     <Svg width="100%" height="100%" viewBox="0 0 400 200" style={{ position: 'absolute', top: 0, left: 0 }}>
                         <Rect x="0" y="0" width="400" height="200" fill="#ffffff" opacity={0.15} />
@@ -881,12 +977,18 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                         {/* Boundary */}
                         <Polygon points={boundaryPoints} fill="none" stroke="#f43f5e" strokeOpacity={0.4} strokeWidth="1.5" strokeDasharray="3,3" />
                         
-                        {/* Calibrated Contours conforming to local property bounding shape */}
-                        <Path d={`M ${hX - 60} ${hY - 20} Q ${hX} ${hY - 40} ${hX + 60} ${hY - 20}`} fill="none" stroke="#f43f5e" strokeOpacity={0.4} strokeWidth="1.5" strokeDasharray="3,3" />
-                        <Path d={`M ${hX - 60} ${hY + 20} Q ${hX} ${hY} ${hX + 60} ${hY + 20}`} fill="none" stroke="#f43f5e" strokeOpacity={0.4} strokeWidth="1.5" strokeDasharray="3,3" />
-                        
-                        <Text x={hX - 30} y={hY - 32} style={{ fontSize: 5, fill: '#f43f5e' }}>CONTOUR LINE A</Text>
-                        <Text x={hX - 30} y={hY + 8} style={{ fontSize: 5, fill: '#f43f5e' }}>CONTOUR LINE B</Text>
+                        {/* Calibrated Dynamic Contours conforming to local property shape and slope */}
+                        {[0.2, 0.4, 0.6, 0.8].map((yPct, index) => {
+                            const contour = getContourLineData(yPct);
+                            return (
+                                <G key={index}>
+                                    <Path d={contour.path} fill="none" stroke="#f43f5e" strokeOpacity={0.6} strokeWidth={1.2} strokeDasharray="3,3" />
+                                    <Text x={contour.labelX} y={contour.labelY} style={{ fontSize: 5, fill: '#ef4444', fontFamily: 'Helvetica-Bold' }}>
+                                        {contour.elev}
+                                    </Text>
+                                </G>
+                            );
+                        })}
                         
                         {/* Scale */}
                         <Rect x="40" y="180" width={scaleBarWidthSvg} height="4" fill="#1b4332" />
@@ -1058,47 +1160,51 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                         </Svg>
                     </View>
                     <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
-                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
-                            {/* Blueprint background */}
-                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
-                            {/* Grid lines */}
-                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
-                            
-                            {/* Center coordinates */}
-                            <Circle cx="100" cy="80" r="60" fill="none" stroke="#334155" strokeWidth="0.5" />
-                            <Circle cx="100" cy="80" r="45" fill="none" stroke="#334155" strokeWidth="0.5" strokeDasharray="2,2" />
-                            <Circle cx="100" cy="80" r="30" fill="none" stroke="#334155" strokeWidth="0.5" />
-                            <Circle cx="100" cy="80" r="15" fill="none" stroke="#334155" strokeWidth="0.5" strokeDasharray="2,2" />
-                            
-                            {/* Zone 0 House */}
-                            <Rect x="93" y="75" width="14" height="10" fill="#38bdf8" />
-                            <Polygon points="90,75 100,68 110,75" fill="#0284c7" />
-                            
-                            {/* Labels */}
-                            <Text x="100" y="90" style={{ fontSize: 4.5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 0: HOUSE</Text>
-                            
-                            {/* Zone 1 indicator */}
-                            <Path d="M 100 80 L 120 65" stroke="#38bdf8" strokeWidth="0.8" />
-                            <Circle cx="120" cy="65" r="1.5" fill="#38bdf8" />
-                            <Text x="123" y="66" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 1: KITCHEN GARDEN</Text>
-                            <Text x="123" y="71" style={{ fontSize: 3.5, fill: '#38bdf8' }}>{`(${activeDesign.soilCrops})`}</Text>
-                            
-                            {/* Zone 2 indicator */}
-                            <Path d="M 100 80 L 70 50" stroke="#10b981" strokeWidth="0.8" />
-                            <Circle cx="70" cy="50" r="1.5" fill="#10b981" />
-                            <Text x="15" y="47" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 2: SEMI-INTENSIVE</Text>
-                            <Text x="15" y="52" style={{ fontSize: 3.5, fill: '#10b981' }}>{`(${activeDesign.plantGuildTitle.split(' ')[0]} Guild)`}</Text>
-                            
-                            {/* Zone 3 indicator */}
-                            <Path d="M 100 80 L 140 115" stroke="#fbbf24" strokeWidth="0.8" />
-                            <Circle cx="140" cy="115" r="1.5" fill="#fbbf24" />
-                            <Text x="143" y="117" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 3: AGROFORESTRY</Text>
-                            <Text x="143" y="122" style={{ fontSize: 3.5, fill: '#fbbf24' }}>{`(${activeDesign.canopyEmergentSpecies.split(' (')[0]})`}</Text>
-                            
-                            {/* Dynamic Title Overlay */}
-                            <Text x="8" y="145" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>CONCENTRIC ZONING SCHEMATIC</Text>
-                            <Text x="8" y="152" style={{ fontSize: 4, fill: '#e2e8f0' }}>{`Site: ${userData.projectName || "Unnamed"} | Lat: ${latStr}`}</Text>
-                        </Svg>
+                        {maps?.concentricZoning ? (
+                            <Image src={maps.concentricZoning} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                                {/* Blueprint background */}
+                                <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                                {/* Grid lines */}
+                                <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
+                                
+                                {/* Center coordinates */}
+                                <Circle cx="100" cy="80" r="60" fill="none" stroke="#334155" strokeWidth="0.5" />
+                                <Circle cx="100" cy="80" r="45" fill="none" stroke="#334155" strokeWidth="0.5" strokeDasharray="2,2" />
+                                <Circle cx="100" cy="80" r="30" fill="none" stroke="#334155" strokeWidth="0.5" />
+                                <Circle cx="100" cy="80" r="15" fill="none" stroke="#334155" strokeWidth="0.5" strokeDasharray="2,2" />
+                                
+                                {/* Zone 0 House */}
+                                <Rect x="93" y="75" width="14" height="10" fill="#38bdf8" />
+                                <Polygon points="90,75 100,68 110,75" fill="#0284c7" />
+                                
+                                {/* Labels */}
+                                <Text x="100" y="90" style={{ fontSize: 4.5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 0: HOUSE</Text>
+                                
+                                {/* Zone 1 indicator */}
+                                <Path d="M 100 80 L 120 65" stroke="#38bdf8" strokeWidth="0.8" />
+                                <Circle cx="120" cy="65" r="1.5" fill="#38bdf8" />
+                                <Text x="123" y="66" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 1: KITCHEN GARDEN</Text>
+                                <Text x="123" y="71" style={{ fontSize: 3.5, fill: '#38bdf8' }}>{`(${activeDesign.soilCrops})`}</Text>
+                                
+                                {/* Zone 2 indicator */}
+                                <Path d="M 100 80 L 70 50" stroke="#10b981" strokeWidth="0.8" />
+                                <Circle cx="70" cy="50" r="1.5" fill="#10b981" />
+                                <Text x="15" y="47" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 2: SEMI-INTENSIVE</Text>
+                                <Text x="15" y="52" style={{ fontSize: 3.5, fill: '#10b981' }}>{`(${activeDesign.plantGuildTitle.split(' ')[0]} Guild)`}</Text>
+                                
+                                {/* Zone 3 indicator */}
+                                <Path d="M 100 80 L 140 115" stroke="#fbbf24" strokeWidth="0.8" />
+                                <Circle cx="140" cy="115" r="1.5" fill="#fbbf24" />
+                                <Text x="143" y="117" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 3: AGROFORESTRY</Text>
+                                <Text x="143" y="122" style={{ fontSize: 3.5, fill: '#fbbf24' }}>{`(${activeDesign.canopyEmergentSpecies.split(' (')[0]})`}</Text>
+                                
+                                {/* Dynamic Title Overlay */}
+                                <Text x="8" y="145" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>CONCENTRIC ZONING SCHEMATIC</Text>
+                                <Text x="8" y="152" style={{ fontSize: 4, fill: '#e2e8f0' }}>{`Site: ${userData.projectName || "Unnamed"} | Lat: ${latStr}`}</Text>
+                            </Svg>
+                        )}
                     </View>
                 </View>
                 <Text style={styles.caption}>Figure 5: Concentric zoning plan detailing system access layers.</Text>
@@ -1334,43 +1440,47 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                         </Svg>
                     </View>
                     <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
-                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
-                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
-                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
-                            
-                            {/* Filter Column Outline */}
-                            <Rect x="60" y="25" width="80" height="100" fill="none" stroke="#38bdf8" strokeWidth="1.5" rx="2" />
-                            
-                            {/* Filter Layers */}
-                            {/* Layer 1: Sand (Top) */}
-                            <Rect x="61" y="26" width="78" height="25" fill="#fef08a" opacity={0.8} />
-                            <Text x="100" y="40" style={{ fontSize: 5, fill: '#713f12', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>FINE SILICA SAND (25%)</Text>
-                            
-                            {/* Layer 2: Charcoal (Middle-Top) */}
-                            <Rect x="61" y="51" width="78" height="25" fill="#334155" opacity={0.9} />
-                            <Text x="100" y="65" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>
-                                {`ACTIVATED ${climateZone === 'Arid' ? 'NEEM' : climateZone === 'Tropical' ? 'BAMBOO' : 'HARDWOOD'} CHARCOAL (25%)`}
-                            </Text>
-                            
-                            {/* Layer 3: Fine Gravel (Middle-Bottom) */}
-                            <Rect x="61" y="76" width="78" height="25" fill="#94a3b8" opacity={0.8} />
-                            <Text x="100" y="90" style={{ fontSize: 5, fill: '#1e293b', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>FINE PEA GRAVEL (25%)</Text>
-                            
-                            {/* Layer 4: Coarse Gravel (Bottom) */}
-                            <Rect x="61" y="101" width="78" height="23" fill="#64748b" opacity={0.8} />
-                            <Text x="100" y="115" style={{ fontSize: 5, fill: '#0f172a', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>COARSE DRAINAGE ROCK (25%)</Text>
-                            
-                            {/* Inflow Arrow */}
-                            <Path d="M 100 8 L 100 20 M 96 16 L 100 20 L 104 16" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-                            <Text x="100" y="5" style={{ fontSize: 4, fill: '#38bdf8', textAnchor: 'middle' }}>RAW CATCHMENT INLET</Text>
-                            
-                            {/* Outflow Arrow */}
-                            <Path d="M 100 125 L 100 137 M 96 133 L 100 137 L 104 133" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-                            <Text x="100" y="145" style={{ fontSize: 4.5, fill: '#38bdf8', textAnchor: 'middle' }}>TO POTABLE CISTERN STORAGE</Text>
-                            
-                            {/* Title */}
-                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>SLOW-SAND SOIL BIO-FILTER STACK</Text>
-                        </Svg>
+                        {maps?.waterHarvesting ? (
+                            <Image src={maps.waterHarvesting} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                                <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                                <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
+                                
+                                {/* Filter Column Outline */}
+                                <Rect x="60" y="25" width="80" height="100" fill="none" stroke="#38bdf8" strokeWidth="1.5" rx="2" />
+                                
+                                {/* Filter Layers */}
+                                {/* Layer 1: Sand (Top) */}
+                                <Rect x="61" y="26" width="78" height="25" fill="#fef08a" opacity={0.8} />
+                                <Text x="100" y="40" style={{ fontSize: 5, fill: '#713f12', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>FINE SILICA SAND (25%)</Text>
+                                
+                                {/* Layer 2: Charcoal (Middle-Top) */}
+                                <Rect x="61" y="51" width="78" height="25" fill="#334155" opacity={0.9} />
+                                <Text x="100" y="65" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>
+                                    {`ACTIVATED ${climateZone === 'Arid' ? 'NEEM' : climateZone === 'Tropical' ? 'BAMBOO' : 'HARDWOOD'} CHARCOAL (25%)`}
+                                </Text>
+                                
+                                {/* Layer 3: Fine Gravel (Middle-Bottom) */}
+                                <Rect x="61" y="76" width="78" height="25" fill="#94a3b8" opacity={0.8} />
+                                <Text x="100" y="90" style={{ fontSize: 5, fill: '#1e293b', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>FINE PEA GRAVEL (25%)</Text>
+                                
+                                {/* Layer 4: Coarse Gravel (Bottom) */}
+                                <Rect x="61" y="101" width="78" height="23" fill="#64748b" opacity={0.8} />
+                                <Text x="100" y="115" style={{ fontSize: 5, fill: '#0f172a', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>COARSE DRAINAGE ROCK (25%)</Text>
+                                
+                                {/* Inflow Arrow */}
+                                <Path d="M 100 8 L 100 20 M 96 16 L 100 20 L 104 16" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                                <Text x="100" y="5" style={{ fontSize: 4, fill: '#38bdf8', textAnchor: 'middle' }}>RAW CATCHMENT INLET</Text>
+                                
+                                {/* Outflow Arrow */}
+                                <Path d="M 100 125 L 100 137 M 96 133 L 100 137 L 104 133" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                                <Text x="100" y="145" style={{ fontSize: 4.5, fill: '#38bdf8', textAnchor: 'middle' }}>TO POTABLE CISTERN STORAGE</Text>
+                                
+                                {/* Title */}
+                                <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>SLOW-SAND SOIL BIO-FILTER STACK</Text>
+                            </Svg>
+                        )}
                     </View>
                 </View>
                 <Text style={styles.caption}>Figure 7: Technical schematic of first flush roof-to-cistern water harvesting loop.</Text>
@@ -1429,63 +1539,67 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                         </Svg>
                     </View>
                     <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
-                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
-                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
-                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
-                            
-                            {/* Raised Header Tank */}
-                            <Rect x="20" y="15" width="30" height="35" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
-                            <Line x1="20" y1="35" x2="50" y2="35" stroke="#38bdf8" strokeWidth="0.5" />
-                            {/* Support Stand */}
-                            <Line x1="25" y1="50" x2="15" y2="80" stroke="#64748b" strokeWidth="1" />
-                            <Line x1="45" y1="50" x2="55" y2="80" stroke="#64748b" strokeWidth="1" />
-                            <Line x1="35" y1="50" x2="35" y2="80" stroke="#64748b" strokeWidth="1" />
-                            <Line x1="15" y1="80" x2="55" y2="80" stroke="#64748b" strokeWidth="1" />
-                            <Text x="35" y="32" style={{ fontSize: 4.5, fill: '#0369a1', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>HEADER TANK</Text>
-                            
-                            {/* Feed Main Pipe */}
-                            <Path d="M 50 40 L 65 40 L 65 85 L 140 85" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-                            
-                            {/* Filter & Valve */}
-                            <Rect x="75" y="81" width="10" height="8" fill="#1e293b" stroke="#38bdf8" strokeWidth="0.8" />
-                            <Text x="80" y="77" style={{ fontSize: 3.5, fill: '#94a3b8', textAnchor: 'middle' }}>FILTER</Text>
-                            
-                            {/* Soil Line */}
-                            <Line x1="60" y1="110" x2="190" y2="110" stroke="#78350f" strokeWidth="2.5" />
-                            <Text x="155" y="120" style={{ fontSize: 4, fill: '#92400e' }}>BIOLOGICAL SOIL SPONGE</Text>
-                            
-                            {/* Drip Irrigation Lateral */}
-                            <Line x1="90" y1="108" x2="180" y2="108" stroke="#334155" strokeWidth="1.2" />
-                            
-                            {/* Plants and Drip Points */}
-                            <Path d="M 120 108 L 120 95 Q 125 90 120 85 Q 115 90 120 95" fill="none" stroke="#22c55e" strokeWidth="1" />
-                            <Circle cx="120" cy="111" r="1" fill="#38bdf8" />
-                            
-                            {/* If Arid or Subtropical, show a Buried Olla */}
-                            {(climateZone === 'Arid' || climateZone === 'Subtropical') ? (
-                                <>
-                                    <Path d="M 145 108 L 155 108 Q 158 115 155 125 Q 150 128 145 125 Q 142 115 145 108 Z" fill="#b45309" stroke="#78350f" strokeWidth="0.8" />
-                                    <Text x="150" y="117" style={{ fontSize: 3, fill: '#fef3c7', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>OLLA</Text>
-                                    <Path d="M 141 118 L 138 118 M 159 118 L 162 118" stroke="#38bdf8" strokeWidth="0.5" />
-                                    <Path d="M 120 108 L 140 108" fill="none" stroke="#38bdf8" strokeWidth="1" strokeDasharray="1,1" />
-                                    <Text x="130" y="104" style={{ fontSize: 3, fill: '#38bdf8' }}>Olla Feed Lateral</Text>
-                                </>
-                            ) : (
-                                <>
-                                    <Path d="M 160 108 L 160 90 Q 165 85 160 80" fill="none" stroke="#22c55e" strokeWidth="1" />
-                                    <Circle cx="160" cy="111" r="1" fill="#38bdf8" />
-                                    <Text x="160" y="104" style={{ fontSize: 3, fill: '#38bdf8', textAnchor: 'middle' }}>Drip Emitter</Text>
-                                </>
-                            )}
-                            
-                            {/* Pressure Info */}
-                            <Text x="80" y="25" style={{ fontSize: 4.5, fill: '#e2e8f0' }}>{`Static Head: ~${elevation ? (1.5 + elevation.slope * 0.1).toFixed(1) : "2.0"} m`}</Text>
-                            <Text x="80" y="32" style={{ fontSize: 4.5, fill: '#38bdf8' }}>{`Pressure: ~${elevation ? ((1.5 + elevation.slope * 0.1) * 0.1).toFixed(2) : "0.20"} bar`}</Text>
-                            <Text x="80" y="39" style={{ fontSize: 4.5, fill: '#38bdf8' }}>NO PUMP REQUIRED</Text>
-                            
-                            {/* Title */}
-                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>GRAVITY-FED DRIP SYSTEM SCHEMATIC</Text>
-                        </Svg>
+                        {maps?.gravityDrip ? (
+                            <Image src={maps.gravityDrip} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                                <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                                <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
+                                
+                                {/* Raised Header Tank */}
+                                <Rect x="20" y="15" width="30" height="35" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
+                                <Line x1="20" y1="35" x2="50" y2="35" stroke="#38bdf8" strokeWidth="0.5" />
+                                {/* Support Stand */}
+                                <Line x1="25" y1="50" x2="15" y2="80" stroke="#64748b" strokeWidth="1" />
+                                <Line x1="45" y1="50" x2="55" y2="80" stroke="#64748b" strokeWidth="1" />
+                                <Line x1="35" y1="50" x2="35" y2="80" stroke="#64748b" strokeWidth="1" />
+                                <Line x1="15" y1="80" x2="55" y2="80" stroke="#64748b" strokeWidth="1" />
+                                <Text x="35" y="32" style={{ fontSize: 4.5, fill: '#0369a1', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>HEADER TANK</Text>
+                                
+                                {/* Feed Main Pipe */}
+                                <Path d="M 50 40 L 65 40 L 65 85 L 140 85" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                                
+                                {/* Filter & Valve */}
+                                <Rect x="75" y="81" width="10" height="8" fill="#1e293b" stroke="#38bdf8" strokeWidth="0.8" />
+                                <Text x="80" y="77" style={{ fontSize: 3.5, fill: '#94a3b8', textAnchor: 'middle' }}>FILTER</Text>
+                                
+                                {/* Soil Line */}
+                                <Line x1="60" y1="110" x2="190" y2="110" stroke="#78350f" strokeWidth="2.5" />
+                                <Text x="155" y="120" style={{ fontSize: 4, fill: '#92400e' }}>BIOLOGICAL SOIL SPONGE</Text>
+                                
+                                {/* Drip Irrigation Lateral */}
+                                <Line x1="90" y1="108" x2="180" y2="108" stroke="#334155" strokeWidth="1.2" />
+                                
+                                {/* Plants and Drip Points */}
+                                <Path d="M 120 108 L 120 95 Q 125 90 120 85 Q 115 90 120 95" fill="none" stroke="#22c55e" strokeWidth="1" />
+                                <Circle cx="120" cy="111" r="1" fill="#38bdf8" />
+                                
+                                {/* If Arid or Subtropical, show a Buried Olla */}
+                                {(climateZone === 'Arid' || climateZone === 'Subtropical') ? (
+                                    <>
+                                        <Path d="M 145 108 L 155 108 Q 158 115 155 125 Q 150 128 145 125 Q 142 115 145 108 Z" fill="#b45309" stroke="#78350f" strokeWidth="0.8" />
+                                        <Text x="150" y="117" style={{ fontSize: 3, fill: '#fef3c7', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>OLLA</Text>
+                                        <Path d="M 141 118 L 138 118 M 159 118 L 162 118" stroke="#38bdf8" strokeWidth="0.5" />
+                                        <Path d="M 120 108 L 140 108" fill="none" stroke="#38bdf8" strokeWidth="1" strokeDasharray="1,1" />
+                                        <Text x="130" y="104" style={{ fontSize: 3, fill: '#38bdf8' }}>Olla Feed Lateral</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Path d="M 160 108 L 160 90 Q 165 85 160 80" fill="none" stroke="#22c55e" strokeWidth="1" />
+                                        <Circle cx="160" cy="111" r="1" fill="#38bdf8" />
+                                        <Text x="160" y="104" style={{ fontSize: 3, fill: '#38bdf8', textAnchor: 'middle' }}>Drip Emitter</Text>
+                                    </>
+                                )}
+                                
+                                {/* Pressure Info */}
+                                <Text x="80" y="25" style={{ fontSize: 4.5, fill: '#e2e8f0' }}>{`Static Head: ~${elevation ? (1.5 + elevation.slope * 0.1).toFixed(1) : "2.0"} m`}</Text>
+                                <Text x="80" y="32" style={{ fontSize: 4.5, fill: '#38bdf8' }}>{`Pressure: ~${elevation ? ((1.5 + elevation.slope * 0.1) * 0.1).toFixed(2) : "0.20"} bar`}</Text>
+                                <Text x="80" y="39" style={{ fontSize: 4.5, fill: '#38bdf8' }}>NO PUMP REQUIRED</Text>
+                                
+                                {/* Title */}
+                                <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>GRAVITY-FED DRIP SYSTEM SCHEMATIC</Text>
+                            </Svg>
+                        )}
                     </View>
                 </View>
                 <Text style={styles.caption}>Figure 8: Technical schematic of passive gravity drip pipeline.</Text>
@@ -1532,48 +1646,52 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                         </Svg>
                     </View>
                     <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
-                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
-                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
-                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
-                            
-                            {/* Hillside Slope Contour */}
-                            <Path d="M 10 60 L 60 70 Q 75 72 80 80 Q 95 105 115 102 Q 130 98 140 80 Q 150 70 190 78" fill="none" stroke="#78350f" strokeWidth="2" />
-                            
-                            {/* Ditch Infill (Mulch Basin) */}
-                            <Path d="M 80 80 Q 95 105 115 102 Q 120 95 116 85 Z" fill="#92400e" opacity={0.6} />
-                            <Text x="100" y="93" style={{ fontSize: 3.5, fill: '#fef3c7', textAnchor: 'middle' }}>ORGANIC MULCH</Text>
-                            
-                            {/* Water Level in Ditch */}
-                            <Path d="M 83 82 Q 98 98 113 95" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-                            
-                            {/* Infiltration Arrows (Water Lens) */}
-                            <Path d="M 98 102 L 98 122 M 94 118 L 98 122 L 102 118" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
-                            <Path d="M 110 102 L 118 118 M 114 116 L 118 118 L 119 113" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
-                            <Circle cx="102" cy="130" r="12" fill="#bae6fd" opacity={0.35} />
-                            <Text x="102" y="132" style={{ fontSize: 3.5, fill: '#0284c7', textAnchor: 'middle', fontFamily: 'Helvetica-Bold' }}>WATER LENS</Text>
-                            
-                            {/* Tree planted on the Berm */}
-                            <Rect x="144" y="62" width="4" height="15" fill="#78350f" />
-                            <Circle cx="146" cy="53" r="10" fill="#22c55e" opacity={0.9} />
-                            
-                            {/* Companion Plant on Berm slope */}
-                            <Circle cx="160" cy="74" r="3" fill="#fbbf24" />
-                            <Line x1="160" y1="74" x2="160" y2="77" stroke="#15803d" strokeWidth="0.8" />
-                            
-                            {/* Labels */}
-                            <Text x="146" y="38" style={{ fontSize: 4.5, fill: '#4ade80', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>
-                                {climateZone === 'Arid' ? 'Baobab Tree' : climateZone === 'Tropical' ? 'Banana Plant' : climateZone === 'Temperate' ? 'Apple Tree' : 'Olive Tree'}
-                            </Text>
-                            <Text x="175" y="65" style={{ fontSize: 3.5, fill: '#fcd34d', textAnchor: 'middle' }}>
-                                {climateZone === 'Arid' ? 'Pigeon Pea' : climateZone === 'Tropical' ? 'Vetiver Grass' : climateZone === 'Temperate' ? 'Currants' : 'Spanish Broom'}
-                            </Text>
-                            
-                            <Text x="15" y="100" style={{ fontSize: 4.5, fill: '#94a3b8' }}>{`Slope: ${elevation ? elevation.slope.toFixed(1) : "1.2"}%`}</Text>
-                            <Text x="15" y="107" style={{ fontSize: 4.5, fill: '#38bdf8' }}>PASSIVE RUNOFF WATERWAY</Text>
-                            
-                            {/* Title */}
-                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>CONTOUR SWALE CROSS-SECTION</Text>
-                        </Svg>
+                        {maps?.contourSwales ? (
+                            <Image src={maps.contourSwales} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                                <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                                <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
+                                
+                                {/* Hillside Slope Contour */}
+                                <Path d="M 10 60 L 60 70 Q 75 72 80 80 Q 95 105 115 102 Q 130 98 140 80 Q 150 70 190 78" fill="none" stroke="#78350f" strokeWidth="2" />
+                                
+                                {/* Ditch Infill (Mulch Basin) */}
+                                <Path d="M 80 80 Q 95 105 115 102 Q 120 95 116 85 Z" fill="#92400e" opacity={0.6} />
+                                <Text x="100" y="93" style={{ fontSize: 3.5, fill: '#fef3c7', textAnchor: 'middle' }}>ORGANIC MULCH</Text>
+                                
+                                {/* Water Level in Ditch */}
+                                <Path d="M 83 82 Q 98 98 113 95" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                                
+                                {/* Infiltration Arrows (Water Lens) */}
+                                <Path d="M 98 102 L 98 122 M 94 118 L 98 122 L 102 118" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
+                                <Path d="M 110 102 L 118 118 M 114 116 L 118 118 L 119 113" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
+                                <Circle cx="102" cy="130" r="12" fill="#bae6fd" opacity={0.35} />
+                                <Text x="102" y="132" style={{ fontSize: 3.5, fill: '#0284c7', textAnchor: 'middle', fontFamily: 'Helvetica-Bold' }}>WATER LENS</Text>
+                                
+                                {/* Tree planted on the Berm */}
+                                <Rect x="144" y="62" width="4" height="15" fill="#78350f" />
+                                <Circle cx="146" cy="53" r="10" fill="#22c55e" opacity={0.9} />
+                                
+                                {/* Companion Plant on Berm slope */}
+                                <Circle cx="160" cy="74" r="3" fill="#fbbf24" />
+                                <Line x1="160" y1="74" x2="160" y2="77" stroke="#15803d" strokeWidth="0.8" />
+                                
+                                {/* Labels */}
+                                <Text x="146" y="38" style={{ fontSize: 4.5, fill: '#4ade80', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>
+                                    {climateZone === 'Arid' ? 'Baobab Tree' : climateZone === 'Tropical' ? 'Banana Plant' : climateZone === 'Temperate' ? 'Apple Tree' : 'Olive Tree'}
+                                </Text>
+                                <Text x="175" y="65" style={{ fontSize: 3.5, fill: '#fcd34d', textAnchor: 'middle' }}>
+                                    {climateZone === 'Arid' ? 'Pigeon Pea' : climateZone === 'Tropical' ? 'Vetiver Grass' : climateZone === 'Temperate' ? 'Currants' : 'Spanish Broom'}
+                                </Text>
+                                
+                                <Text x="15" y="100" style={{ fontSize: 4.5, fill: '#94a3b8' }}>{`Slope: ${elevation ? elevation.slope.toFixed(1) : "1.2"}%`}</Text>
+                                <Text x="15" y="107" style={{ fontSize: 4.5, fill: '#38bdf8' }}>PASSIVE RUNOFF WATERWAY</Text>
+                                
+                                {/* Title */}
+                                <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>CONTOUR SWALE CROSS-SECTION</Text>
+                            </Svg>
+                        )}
                     </View>
                 </View>
                 <Text style={styles.caption}>Figure 9: Infiltration contour swales and storage pond network overlaid on top of high-resolution satellite imagery.</Text>
@@ -1626,49 +1744,53 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                         </Svg>
                     </View>
                     <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
-                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
-                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
-                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
-                            
-                            {/* Bubble 1: Zone 0 Homestead */}
-                            <Rect x="20" y="20" width="45" height="25" fill="#1e293b" stroke="#38bdf8" strokeWidth="1" rx="4" />
-                            <Text x="42.5" y="31" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 0: HOMESTEAD</Text>
-                            <Text x="42.5" y="39" style={{ fontSize: 3.5, fill: '#38bdf8', textAnchor: 'middle' }}>Roof Catchment & Greywater</Text>
-                            
-                            {/* Bubble 2: Zone 1 Kitchen Garden */}
-                            <Rect x="85" y="20" width="45" height="25" fill="#1e293b" stroke="#10b981" strokeWidth="1" rx="4" />
-                            <Text x="107.5" y="31" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 1: KITCHEN</Text>
-                            <Text x="107.5" y="39" style={{ fontSize: 3.5, fill: '#10b981', textAnchor: 'middle' }}>Intensive Annuals & Herbs</Text>
-                            
-                            {/* Bubble 3: Zone 2/3 Orchards */}
-                            <Rect x="85" y="75" width="45" height="25" fill="#1e293b" stroke="#fbbf24" strokeWidth="1" rx="4" />
-                            <Text x="107.5" y="86" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 2: GUILD ORCHARD</Text>
-                            <Text x="107.5" y="94" style={{ fontSize: 3.5, fill: '#fbbf24', textAnchor: 'middle' }}>{`(${activeDesign.plantGuildTitle.split(' ')[0]} Systems)`}</Text>
-                            
-                            {/* Bubble 4: Zone 4 Shelterbelt */}
-                            <Rect x="20" y="75" width="45" height="25" fill="#1e293b" stroke="#15803d" strokeWidth="1" rx="4" />
-                            <Text x="42.5" y="86" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 4: SHELTERBELT</Text>
-                            <Text x="42.5" y="94" style={{ fontSize: 3.5, fill: '#4ade80', textAnchor: 'middle' }}>Windbreak & Humus Cycle</Text>
-                            
-                            {/* Arrows & Flows */}
-                            <Path d="M 65 27.5 L 85 27.5 M 81 24.5 L 85 27.5 L 81 30.5" fill="none" stroke="#38bdf8" strokeWidth="1" />
-                            <Text x="75" y="24" style={{ fontSize: 3, fill: '#38bdf8', textAnchor: 'middle' }}>Rainwater Flow</Text>
-                            
-                            <Path d={`M 42.5 45 L 42.5 60 L 85 87.5 M 81 84.5 L 85 87.5 L 82 91`} fill="none" stroke="#3b82f6" strokeWidth="1" />
-                            <Text x="50" y="55" style={{ fontSize: 3, fill: '#60a5fa' }}>Greywater Flow</Text>
-                            
-                            <Path d="M 65 87.5 L 85 87.5 M 81 84.5 L 85 87.5 L 81 90.5" fill="none" stroke="#10b981" strokeWidth="1" />
-                            <Text x="75" y="84" style={{ fontSize: 3, fill: '#10b981', textAnchor: 'middle' }}>Mulch Biomass</Text>
-                            
-                            <Path d="M 107.5 75 L 107.5 45 M 104.5 49 L 107.5 45 L 110.5 49" fill="none" stroke="#b45309" strokeWidth="1" />
-                            <Text x="110" y="60" style={{ fontSize: 3, fill: '#b45309' }}>Compost & Nutrients</Text>
-                            
-                            <Path d="M 32.5 75 L 32.5 45 M 29.5 49 L 32.5 45 L 35.5 49" fill="none" stroke="#ef4444" strokeWidth="1" strokeDasharray="2,2" />
-                            <Text x="25" y="60" style={{ fontSize: 3, fill: '#f87171' }}>Wind Buffer</Text>
-                            
-                            {/* Title */}
-                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>FUNCTIONAL CONNECTIVITY & ENERGY FLOWS</Text>
-                        </Svg>
+                        {maps?.functionalConcept ? (
+                            <Image src={maps.functionalConcept} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                                <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                                <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
+                                
+                                {/* Bubble 1: Zone 0 Homestead */}
+                                <Rect x="20" y="20" width="45" height="25" fill="#1e293b" stroke="#38bdf8" strokeWidth="1" rx="4" />
+                                <Text x="42.5" y="31" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 0: HOMESTEAD</Text>
+                                <Text x="42.5" y="39" style={{ fontSize: 3.5, fill: '#38bdf8', textAnchor: 'middle' }}>Roof Catchment & Greywater</Text>
+                                
+                                {/* Bubble 2: Zone 1 Kitchen Garden */}
+                                <Rect x="85" y="20" width="45" height="25" fill="#1e293b" stroke="#10b981" strokeWidth="1" rx="4" />
+                                <Text x="107.5" y="31" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 1: KITCHEN</Text>
+                                <Text x="107.5" y="39" style={{ fontSize: 3.5, fill: '#10b981', textAnchor: 'middle' }}>Intensive Annuals & Herbs</Text>
+                                
+                                {/* Bubble 3: Zone 2/3 Orchards */}
+                                <Rect x="85" y="75" width="45" height="25" fill="#1e293b" stroke="#fbbf24" strokeWidth="1" rx="4" />
+                                <Text x="107.5" y="86" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 2: GUILD ORCHARD</Text>
+                                <Text x="107.5" y="94" style={{ fontSize: 3.5, fill: '#fbbf24', textAnchor: 'middle' }}>{`(${activeDesign.plantGuildTitle.split(' ')[0]} Systems)`}</Text>
+                                
+                                {/* Bubble 4: Zone 4 Shelterbelt */}
+                                <Rect x="20" y="75" width="45" height="25" fill="#1e293b" stroke="#15803d" strokeWidth="1" rx="4" />
+                                <Text x="42.5" y="86" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 4: SHELTERBELT</Text>
+                                <Text x="42.5" y="94" style={{ fontSize: 3.5, fill: '#4ade80', textAnchor: 'middle' }}>Windbreak & Humus Cycle</Text>
+                                
+                                {/* Arrows & Flows */}
+                                <Path d="M 65 27.5 L 85 27.5 M 81 24.5 L 85 27.5 L 81 30.5" fill="none" stroke="#38bdf8" strokeWidth="1" />
+                                <Text x="75" y="24" style={{ fontSize: 3, fill: '#38bdf8', textAnchor: 'middle' }}>Rainwater Flow</Text>
+                                
+                                <Path d={`M 42.5 45 L 42.5 60 L 85 87.5 M 81 84.5 L 85 87.5 L 82 91`} fill="none" stroke="#3b82f6" strokeWidth="1" />
+                                <Text x="50" y="55" style={{ fontSize: 3, fill: '#60a5fa' }}>Greywater Flow</Text>
+                                
+                                <Path d="M 65 87.5 L 85 87.5 M 81 84.5 L 85 87.5 L 81 90.5" fill="none" stroke="#10b981" strokeWidth="1" />
+                                <Text x="75" y="84" style={{ fontSize: 3, fill: '#10b981', textAnchor: 'middle' }}>Mulch Biomass</Text>
+                                
+                                <Path d="M 107.5 75 L 107.5 45 M 104.5 49 L 107.5 45 L 110.5 49" fill="none" stroke="#b45309" strokeWidth="1" />
+                                <Text x="110" y="60" style={{ fontSize: 3, fill: '#b45309' }}>Compost & Nutrients</Text>
+                                
+                                <Path d="M 32.5 75 L 32.5 45 M 29.5 49 L 32.5 45 L 35.5 49" fill="none" stroke="#ef4444" strokeWidth="1" strokeDasharray="2,2" />
+                                <Text x="25" y="60" style={{ fontSize: 3, fill: '#f87171' }}>Wind Buffer</Text>
+                                
+                                {/* Title */}
+                                <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>FUNCTIONAL CONNECTIVITY & ENERGY FLOWS</Text>
+                            </Svg>
+                        )}
                     </View>
                 </View>
                 <Text style={styles.caption}>Figure 10: Concept Bubble Diagram detailing functional zonings and energy relationships overlaid on top of high-resolution satellite imagery.</Text>
@@ -1705,124 +1827,128 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                     {activeDesign.guildLowerText}
                 </Text>
                 <View style={{ width: '100%', height: 160, borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', marginTop: 5, backgroundColor: '#0f172a', position: 'relative' }}>
-                    <Svg width="100%" height="100%" viewBox="0 0 400 160">
-                        {/* Blueprint background grid */}
-                        <Rect x="0" y="0" width="400" height="160" fill="#0f172a" />
-                        <Path d="M 0 20 L 400 20 M 0 40 L 400 40 M 0 60 L 400 60 M 0 80 L 400 80 M 0 100 L 400 100 M 0 120 L 400 120 M 0 140 L 400 140 M 50 0 L 50 160 M 100 0 L 100 160 M 150 0 L 150 160 M 200 0 L 200 160 M 250 0 L 250 160 M 300 0 L 300 160 M 350 0 L 350 160" stroke="#1e293b" strokeWidth="0.5" />
-                        
-                        {/* Ground line */}
-                        <Line x1="10" y1="120" x2="390" y2="120" stroke="#475569" strokeWidth="1.2" />
+                    {maps?.bananaGuild ? (
+                        <Image src={maps.bananaGuild} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                        <Svg width="100%" height="100%" viewBox="0 0 400 160">
+                            {/* Blueprint background grid */}
+                            <Rect x="0" y="0" width="400" height="160" fill="#0f172a" />
+                            <Path d="M 0 20 L 400 20 M 0 40 L 400 40 M 0 60 L 400 60 M 0 80 L 400 80 M 0 100 L 400 100 M 0 120 L 400 120 M 0 140 L 400 140 M 50 0 L 50 160 M 100 0 L 100 160 M 150 0 L 150 160 M 200 0 L 200 160 M 250 0 L 250 160 M 300 0 L 300 160 M 350 0 L 350 160" stroke="#1e293b" strokeWidth="0.5" />
+                            
+                            {/* Ground line */}
+                            <Line x1="10" y1="120" x2="390" y2="120" stroke="#475569" strokeWidth="1.2" />
 
-                        {/* Draw Overstory Canopy tree trunk */}
-                        <Rect x="65" y="55" width="8" height="65" fill="#7c2d12" />
+                            {/* Draw Overstory Canopy tree trunk */}
+                            <Rect x="65" y="55" width="8" height="65" fill="#7c2d12" />
 
-                        {/* Leaves/Canopy based on climate zone */}
-                        {climateZone === 'Arid' ? (
-                            <G>
-                                {/* Flat umbrella canopy of Acacia */}
-                                <Path d="M 20 60 C 20 35 118 35 118 60 Z" fill="#14532d" fillOpacity={0.8} stroke="#16a34a" strokeWidth="1" />
-                                <Path d="M 35 55 C 35 30 105 30 105 55 Z" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
+                            {/* Leaves/Canopy based on climate zone */}
+                            {climateZone === 'Arid' ? (
+                                <G>
+                                    {/* Flat umbrella canopy of Acacia */}
+                                    <Path d="M 20 60 C 20 35 118 35 118 60 Z" fill="#14532d" fillOpacity={0.8} stroke="#16a34a" strokeWidth="1" />
+                                    <Path d="M 35 55 C 35 30 105 30 105 55 Z" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
+                                </G>
+                            ) : climateZone === 'Tropical' ? (
+                                <G>
+                                    {/* Tall tropical leafy canopy */}
+                                    <Circle cx="69" cy="45" r="28" fill="#14532d" fillOpacity={0.8} stroke="#16a34a" strokeWidth="1" />
+                                    <Circle cx="50" cy="55" r="22" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
+                                    <Circle cx="88" cy="55" r="22" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
+                                </G>
+                            ) : climateZone === 'Temperate' ? (
+                                <G>
+                                    {/* Apple tree round canopy */}
+                                    <Circle cx="69" cy="45" r="28" fill="#166534" fillOpacity={0.8} stroke="#15803d" strokeWidth="1" />
+                                    <Circle cx="60" cy="35" r="15" fill="#84cc16" fillOpacity={0.8} />
+                                    {/* Small red apples */}
+                                    <Circle cx="50" cy="45" r="2" fill="#ef4444" />
+                                    <Circle cx="70" cy="35" r="2" fill="#ef4444" />
+                                    <Circle cx="80" cy="55" r="2" fill="#ef4444" />
+                                </G>
+                            ) : (
+                                <G>
+                                    {/* Mediterranean Olive/Fig canopy */}
+                                    <Circle cx="69" cy="50" r="25" fill="#3f6212" fillOpacity={0.8} stroke="#4d7c0f" strokeWidth="1" />
+                                    <Circle cx="52" cy="55" r="18" fill="#4d7c0f" fillOpacity={0.85} stroke="#65a30d" strokeWidth="1" />
+                                    <Circle cx="86" cy="55" r="18" fill="#4d7c0f" fillOpacity={0.85} stroke="#65a30d" strokeWidth="1" />
+                                </G>
+                            )}
+
+                            {/* Draw Understory (Layer 2) */}
+                            <Rect x="145" y="80" width="5" height="40" fill="#a16207" />
+                            {climateZone === 'Tropical' || climateZone === 'Arid' ? (
+                                <G>
+                                    {/* Banana leaves */}
+                                    <Path d="M 147 80 Q 120 70 115 88 Q 135 92 147 80" fill="#22c55e" fillOpacity={0.85} />
+                                    <Path d="M 147 80 Q 175 70 180 88 Q 160 92 147 80" fill="#22c55e" fillOpacity={0.85} />
+                                    <Path d="M 147 75 Q 147 50 140 45 Q 155 50 147 75" fill="#15803d" fillOpacity={0.85} />
+                                </G>
+                            ) : (
+                                <G>
+                                    {/* Small fig/shrub tree */}
+                                    <Circle cx="147" cy="75" r="16" fill="#166534" fillOpacity={0.8} stroke="#15803d" strokeWidth="1" />
+                                </G>
+                            )}
+
+                            {/* Draw Chop-and-Drop Biomass (Layer 3) */}
+                            <Circle cx="215" cy="102" r="12" fill="#15803d" fillOpacity={0.75} stroke="#16a34a" strokeWidth="1" />
+                            <Circle cx="205" cy="107" r="10" fill="#166534" fillOpacity={0.8} />
+                            <Circle cx="225" cy="107" r="10" fill="#166534" fillOpacity={0.8} />
+
+                            {/* Draw Groundcover (Layer 4) */}
+                            <Path d="M 275 120 L 280 110 L 285 120 L 290 108 L 295 120" fill="none" stroke="#22c55e" strokeWidth="1.5" />
+                            <Circle cx="320" cy="117" r="3" fill="#a3e635" />
+                            <Circle cx="335" cy="117" r="3.5" fill="#a3e635" />
+
+                            {/* Roots under the ground level */}
+                            <Path d="M 69 120 Q 45 145 69 155 Q 85 140 69 120" fill="none" stroke="#38bdf8" strokeWidth="1.2" strokeDasharray="2,2" />
+                            <Path d="M 147 120 Q 130 135 147 148" fill="none" stroke="#10b981" strokeWidth="1.2" strokeDasharray="2,2" />
+                            <Path d="M 215 120 Q 205 130 220 140" fill="none" stroke="#fbbf24" strokeWidth="1.2" strokeDasharray="2,2" />
+
+                            {/* Overstory pointer */}
+                            <Path d="M 69 45 L 235 25" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
+                            <Circle cx="69" cy="45" r="1.5" fill="#38bdf8" />
+                            <Text x="242" y="22" style={{ fontSize: 4.5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>OVERSTORY CANOPY</Text>
+                            <Text x="242" y="27" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[0]?.species || "Overstory Tree"}</Text>
+                            <Text x="242" y="32" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[0]?.role || "Provides light shade & wind protection"}</Text>
+                            
+                            {/* Understory pointer */}
+                            <Path d="M 147 75 L 235 55" fill="none" stroke="#10b981" strokeWidth="0.8" />
+                            <Circle cx="147" cy="75" r="1.5" fill="#10b981" />
+                            <Text x="242" y="52" style={{ fontSize: 4.5, fill: '#10b981', fontFamily: 'Helvetica-Bold' }}>UNDERSTORY / ACCUMULATOR</Text>
+                            <Text x="242" y="57" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[1]?.species || "Understory"}</Text>
+                            <Text x="242" y="62" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[1]?.role || "Nitrogen fixation or heavy feeding"}</Text>
+                            
+                            {/* Chop-and-Drop pointer */}
+                            <Path d="M 215 105 L 235 85" fill="none" stroke="#fbbf24" strokeWidth="0.8" />
+                            <Circle cx="215" cy="105" r="1.5" fill="#fbbf24" />
+                            <Text x="242" y="82" style={{ fontSize: 4.5, fill: '#fbbf24', fontFamily: 'Helvetica-Bold' }}>CHOP-AND-DROP BIOMASS</Text>
+                            <Text x="242" y="87" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[2]?.species || "Biomass Producer"}</Text>
+                            <Text x="242" y="92" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[2]?.role || "Provides mulch material and nutrient return"}</Text>
+                            
+                            {/* Herbaceous pointer */}
+                            <Path d="M 285 115 L 235 115" fill="none" stroke="#a3e635" strokeWidth="0.8" />
+                            <Circle cx="285" cy="115" r="1.5" fill="#a3e635" />
+                            <Text x="242" y="112" style={{ fontSize: 4.5, fill: '#a3e635', fontFamily: 'Helvetica-Bold' }}>HERBACEOUS COMPANION</Text>
+                            <Text x="242" y="117" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[3]?.species || "Groundcover"}</Text>
+                            <Text x="242" y="122" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[3]?.role || "Dynamic accumulator & root protection"}</Text>
+
+                            {/* Title block info */}
+                            <Text x="10" y="142" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>{activeDesign.guildLowerHeading.toUpperCase()}</Text>
+                            <Text x="10" y="148" style={{ fontSize: 4.2, fill: '#e2e8f0' }}>{`Companion Guild Layout | Calibrated for: ${activeDesign.zoneName}`}</Text>
+                            <Text x="10" y="153" style={{ fontSize: 3.8, fill: '#94a3b8' }}>{`Location: ${latStr} | System: Concentric multi-tier companion planting`}</Text>
+
+                            {/* Mini Site Key Map */}
+                            <G transform="translate(360, 10)">
+                                <Rect x="0" y="0" width="34" height="34" fill="#ffffff" fillOpacity={0.9} rx="3" stroke="#cbd5e1" strokeWidth="0.5" />
+                                <G transform="translate(6, 6) scale(0.4)">
+                                    <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="3" />
+                                    <Circle cx="25" cy="25" r="4" fill="#ef4444" />
+                                </G>
+                                <Text x="17" y="31" style={{ fontSize: 3, fill: '#475569', textAnchor: 'middle', fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
                             </G>
-                        ) : climateZone === 'Tropical' ? (
-                            <G>
-                                {/* Tall tropical leafy canopy */}
-                                <Circle cx="69" cy="45" r="28" fill="#14532d" fillOpacity={0.8} stroke="#16a34a" strokeWidth="1" />
-                                <Circle cx="50" cy="55" r="22" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
-                                <Circle cx="88" cy="55" r="22" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
-                            </G>
-                        ) : climateZone === 'Temperate' ? (
-                            <G>
-                                {/* Apple tree round canopy */}
-                                <Circle cx="69" cy="45" r="28" fill="#166534" fillOpacity={0.8} stroke="#15803d" strokeWidth="1" />
-                                <Circle cx="60" cy="35" r="15" fill="#84cc16" fillOpacity={0.8} />
-                                {/* Small red apples */}
-                                <Circle cx="50" cy="45" r="2" fill="#ef4444" />
-                                <Circle cx="70" cy="35" r="2" fill="#ef4444" />
-                                <Circle cx="80" cy="55" r="2" fill="#ef4444" />
-                            </G>
-                        ) : (
-                            <G>
-                                {/* Mediterranean Olive/Fig canopy */}
-                                <Circle cx="69" cy="50" r="25" fill="#3f6212" fillOpacity={0.8} stroke="#4d7c0f" strokeWidth="1" />
-                                <Circle cx="52" cy="55" r="18" fill="#4d7c0f" fillOpacity={0.85} stroke="#65a30d" strokeWidth="1" />
-                                <Circle cx="86" cy="55" r="18" fill="#4d7c0f" fillOpacity={0.85} stroke="#65a30d" strokeWidth="1" />
-                            </G>
-                        )}
-
-                        {/* Draw Understory (Layer 2) */}
-                        <Rect x="145" y="80" width="5" height="40" fill="#a16207" />
-                        {climateZone === 'Tropical' || climateZone === 'Arid' ? (
-                            <G>
-                                {/* Banana leaves */}
-                                <Path d="M 147 80 Q 120 70 115 88 Q 135 92 147 80" fill="#22c55e" fillOpacity={0.85} />
-                                <Path d="M 147 80 Q 175 70 180 88 Q 160 92 147 80" fill="#22c55e" fillOpacity={0.85} />
-                                <Path d="M 147 75 Q 147 50 140 45 Q 155 50 147 75" fill="#15803d" fillOpacity={0.85} />
-                            </G>
-                        ) : (
-                            <G>
-                                {/* Small fig/shrub tree */}
-                                <Circle cx="147" cy="75" r="16" fill="#166534" fillOpacity={0.8} stroke="#15803d" strokeWidth="1" />
-                            </G>
-                        )}
-
-                        {/* Draw Chop-and-Drop Biomass (Layer 3) */}
-                        <Circle cx="215" cy="102" r="12" fill="#15803d" fillOpacity={0.75} stroke="#16a34a" strokeWidth="1" />
-                        <Circle cx="205" cy="107" r="10" fill="#166534" fillOpacity={0.8} />
-                        <Circle cx="225" cy="107" r="10" fill="#166534" fillOpacity={0.8} />
-
-                        {/* Draw Groundcover (Layer 4) */}
-                        <Path d="M 275 120 L 280 110 L 285 120 L 290 108 L 295 120" fill="none" stroke="#22c55e" strokeWidth="1.5" />
-                        <Circle cx="320" cy="117" r="3" fill="#a3e635" />
-                        <Circle cx="335" cy="117" r="3.5" fill="#a3e635" />
-
-                        {/* Roots under the ground level */}
-                        <Path d="M 69 120 Q 45 145 69 155 Q 85 140 69 120" fill="none" stroke="#38bdf8" strokeWidth="1.2" strokeDasharray="2,2" />
-                        <Path d="M 147 120 Q 130 135 147 148" fill="none" stroke="#10b981" strokeWidth="1.2" strokeDasharray="2,2" />
-                        <Path d="M 215 120 Q 205 130 220 140" fill="none" stroke="#fbbf24" strokeWidth="1.2" strokeDasharray="2,2" />
-
-                        {/* Overstory pointer */}
-                        <Path d="M 69 45 L 235 25" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
-                        <Circle cx="69" cy="45" r="1.5" fill="#38bdf8" />
-                        <Text x="242" y="22" style={{ fontSize: 4.5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>OVERSTORY CANOPY</Text>
-                        <Text x="242" y="27" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[0]?.species || "Overstory Tree"}</Text>
-                        <Text x="242" y="32" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[0]?.role || "Provides light shade & wind protection"}</Text>
-                        
-                        {/* Understory pointer */}
-                        <Path d="M 147 75 L 235 55" fill="none" stroke="#10b981" strokeWidth="0.8" />
-                        <Circle cx="147" cy="75" r="1.5" fill="#10b981" />
-                        <Text x="242" y="52" style={{ fontSize: 4.5, fill: '#10b981', fontFamily: 'Helvetica-Bold' }}>UNDERSTORY / ACCUMULATOR</Text>
-                        <Text x="242" y="57" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[1]?.species || "Understory"}</Text>
-                        <Text x="242" y="62" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[1]?.role || "Nitrogen fixation or heavy feeding"}</Text>
-                        
-                        {/* Chop-and-Drop pointer */}
-                        <Path d="M 215 105 L 235 85" fill="none" stroke="#fbbf24" strokeWidth="0.8" />
-                        <Circle cx="215" cy="105" r="1.5" fill="#fbbf24" />
-                        <Text x="242" y="82" style={{ fontSize: 4.5, fill: '#fbbf24', fontFamily: 'Helvetica-Bold' }}>CHOP-AND-DROP BIOMASS</Text>
-                        <Text x="242" y="87" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[2]?.species || "Biomass Producer"}</Text>
-                        <Text x="242" y="92" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[2]?.role || "Provides mulch material and nutrient return"}</Text>
-                        
-                        {/* Herbaceous pointer */}
-                        <Path d="M 285 115 L 235 115" fill="none" stroke="#a3e635" strokeWidth="0.8" />
-                        <Circle cx="285" cy="115" r="1.5" fill="#a3e635" />
-                        <Text x="242" y="112" style={{ fontSize: 4.5, fill: '#a3e635', fontFamily: 'Helvetica-Bold' }}>HERBACEOUS COMPANION</Text>
-                        <Text x="242" y="117" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[3]?.species || "Groundcover"}</Text>
-                        <Text x="242" y="122" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[3]?.role || "Dynamic accumulator & root protection"}</Text>
-
-                        {/* Title block info */}
-                        <Text x="10" y="142" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>{activeDesign.guildLowerHeading.toUpperCase()}</Text>
-                        <Text x="10" y="148" style={{ fontSize: 4.2, fill: '#e2e8f0' }}>{`Companion Guild Layout | Calibrated for: ${activeDesign.zoneName}`}</Text>
-                        <Text x="10" y="153" style={{ fontSize: 3.8, fill: '#94a3b8' }}>{`Location: ${latStr} | System: Concentric multi-tier companion planting`}</Text>
-
-                        {/* Mini Site Key Map */}
-                        <G transform="translate(360, 10)">
-                            <Rect x="0" y="0" width="34" height="34" fill="#ffffff" fillOpacity={0.9} rx="3" stroke="#cbd5e1" strokeWidth="0.5" />
-                            <G transform="translate(6, 6) scale(0.4)">
-                                <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="3" />
-                                <Circle cx="25" cy="25" r="4" fill="#ef4444" />
-                            </G>
-                            <Text x="17" y="31" style={{ fontSize: 3, fill: '#475569', textAnchor: 'middle', fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
-                        </G>
-                    </Svg>
+                        </Svg>
+                    )}
                 </View>
                 
                 <Footer pageNum="21" />
@@ -1913,18 +2039,18 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Phase 1 (Months 0-3)</Text>
-                    <Text style={styles.tableCell}>Contours mapping, swale digging, water tank setup</Text>
-                    <Text style={styles.tableCell}>$850 (Self-installed earthworks)</Text>
+                    <Text style={styles.tableCell}>{`Hydrology & Earthworks: contours mapping, swale excavation, and main water storage setup (Scale: ${capex.hectares.toFixed(2)} ha, Slope: ${capex.slopeVal.toFixed(1)}%)`}</Text>
+                    <Text style={styles.tableCell}>{`$${capex.phase1.toLocaleString()} (${capex.isZeroCapex ? 'Zero-CAPEX self-install' : capex.isMaxYield ? 'Heavy machinery grading' : 'Standard contractor install'})`}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Phase 2 (Months 3-6)</Text>
-                    <Text style={styles.tableCell}>Pioneer green manures cover crops, windbreak Neem planting</Text>
-                    <Text style={styles.tableCell}>$320 (Seed stock & seedlings)</Text>
+                    <Text style={styles.tableCell}>Soil preparation, pioneering green manure cover crops, and windbreak shelterbelts planting</Text>
+                    <Text style={styles.tableCell}>{`$${capex.phase2.toLocaleString()} (${capex.isZeroCapex ? 'Gathered seeds & division' : capex.isMaxYield ? 'Imported nursery stock' : 'Standard seedling purchase'})`}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Phase 3 (Months 6-12)</Text>
-                    <Text style={styles.tableCell}>Syntropic crop guilds, fruit orchards, drip systems</Text>
-                    <Text style={styles.tableCell}>$750 (Grafted cultivars, piping)</Text>
+                    <Text style={styles.tableCell}>Final multi-layered crop guilds, fruit orchards graft establishment, and irrigation drip lines</Text>
+                    <Text style={styles.tableCell}>{`$${capex.phase3.toLocaleString()} (${capex.isZeroCapex ? 'Sown seeds & local grafting' : capex.isMaxYield ? 'Automated smart drip lines' : 'Standard gravity drip layout'})`}</Text>
                   </View>
                 </View>
                 <Footer pageNum="23" />

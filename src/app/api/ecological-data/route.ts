@@ -168,48 +168,58 @@ export async function GET(request: Request) {
     const ecologyPromise = (async () => {
       const clim = await climatePromise;
       const zone = getClimateZone(lat, clim.temperature, clim.precipitation);
+      
+      interface TaxonFallback {
+        name: string;
+        commonName: string;
+        photoUrl: string;
+        photoBase64: string;
+      }
 
-      const zoneFallbacks = {
+      const zoneFallbacks: Record<string, { taxa: string[], taxaDetails: TaxonFallback[] }> = {
         Arid: {
-          taxa: ['Acacia tortilis', 'Adansonia digitata', 'Moringa oleifera', 'Azadirachta indica'],
+          taxa: ['Acacia tortilis', 'Adansonia digitata', 'Vulpes zerda', 'Camelus dromedarius'],
           taxaDetails: [
-            { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: '' },
-            { name: 'Adansonia digitata', commonName: 'African Baobab', photoBase64: '' },
-            { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoBase64: '' },
-            { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoBase64: '' }
+            { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400', photoBase64: '' },
+            { name: 'Adansonia digitata', commonName: 'African Baobab', photoUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400', photoBase64: '' },
+            { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoUrl: 'https://images.unsplash.com/photo-1574063413132-355dbfd83e82?w=400', photoBase64: '' },
+            { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoUrl: 'https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=400', photoBase64: '' }
           ]
         },
         Tropical: {
           taxa: ['Mangifera indica', 'Persea americana', 'Panthera onca', 'Ramphastos toco'],
           taxaDetails: [
-            { name: 'Mangifera indica', commonName: 'Mango Tree', photoBase64: '' },
-            { name: 'Persea americana', commonName: 'Avocado Tree', photoBase64: '' },
-            { name: 'Panthera onca', commonName: 'Jaguar', photoBase64: '' },
-            { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoBase64: '' }
+            { name: 'Mangifera indica', commonName: 'Mango Tree', photoUrl: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5cf?w=400', photoBase64: '' },
+            { name: 'Persea americana', commonName: 'Avocado Tree', photoUrl: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400', photoBase64: '' },
+            { name: 'Panthera onca', commonName: 'Jaguar', photoUrl: 'https://images.unsplash.com/photo-1551845187-578f244192b0?w=400', photoBase64: '' },
+            { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoUrl: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400', photoBase64: '' }
           ]
         },
         Temperate: {
           taxa: ['Malus domestica', 'Symphytum officinale', 'Vulpes vulpes', 'Sciurus carolinensis'],
           taxaDetails: [
-            { name: 'Malus domestica', commonName: 'Apple Tree', photoBase64: '' },
-            { name: 'Symphytum officinale', commonName: 'Comfrey', photoBase64: '' },
-            { name: 'Vulpes vulpes', commonName: 'Red Fox', photoBase64: '' },
-            { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoBase64: '' }
+            { name: 'Malus domestica', commonName: 'Apple Tree', photoUrl: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?w=400', photoBase64: '' },
+            { name: 'Symphytum officinale', commonName: 'Comfrey', photoUrl: 'https://images.unsplash.com/photo-1508873696983-2df519f0397e?w=400', photoBase64: '' },
+            { name: 'Vulpes vulpes', commonName: 'Red Fox', photoUrl: 'https://images.unsplash.com/photo-1470093851219-69951fcbb533?w=400', photoBase64: '' },
+            { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoUrl: 'https://images.unsplash.com/photo-1504244729573-6196d76f303c?w=400', photoBase64: '' }
           ]
         },
         Subtropical: {
           taxa: ['Olea europaea', 'Ficus carica', 'Lynx pardinus', 'Genetta genetta'],
           taxaDetails: [
-            { name: 'Olea europaea', commonName: 'Olive Tree', photoBase64: '' },
-            { name: 'Ficus carica', commonName: 'Common Fig', photoBase64: '' },
-            { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoBase64: '' },
-            { name: 'Genetta genetta', commonName: 'Common Genet', photoBase64: '' }
+            { name: 'Olea europaea', commonName: 'Olive Tree', photoUrl: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=400', photoBase64: '' },
+            { name: 'Ficus carica', commonName: 'Common Fig', photoUrl: 'https://images.unsplash.com/photo-1598965675045-45c5e72c7d05?w=400', photoBase64: '' },
+            { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoUrl: 'https://images.unsplash.com/photo-1602491453977-18a86085a44f?w=400', photoBase64: '' },
+            { name: 'Genetta genetta', commonName: 'Common Genet', photoUrl: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=400', photoBase64: '' }
           ]
         }
       };
-
-      let ecology = zoneFallbacks[zone];
-
+      
+      let ecology = {
+        taxa: zoneFallbacks[zone].taxa,
+        taxaDetails: [...zoneFallbacks[zone].taxaDetails]
+      };
+      
       try {
         // Fetch Plants (Plantae) and Animals (Aves, Mammalia, etc.) in parallel
         const [resPlants, resAnimals] = await Promise.all([
@@ -222,10 +232,10 @@ export async function GET(request: Request) {
             { next: { revalidate: 86400 } }
           )
         ]);
-
+        
         let plantResults = [];
         let animalResults = [];
-
+        
         if (resPlants.ok) {
           const pData = await resPlants.json();
           plantResults = pData.results || [];
@@ -234,25 +244,25 @@ export async function GET(request: Request) {
           const aData = await resAnimals.json();
           animalResults = aData.results || [];
         }
-
+        
         const topPlants = plantResults.slice(0, 2);
         const topAnimals = animalResults.slice(0, 2);
         const mergedResults = [...topPlants, ...topAnimals];
-
+        
         if (mergedResults.length > 0) {
           const parsedTaxa = mergedResults
             ?.map((r: any) => r.taxon?.preferred_common_name || r.taxon?.name)
             .filter((name: any) => typeof name === 'string' && name.trim().length > 0);
-
+          
           const photoPromises = mergedResults.map(async (r: any) => {
             const name = r.taxon?.name || '';
             const commonName = r.taxon?.preferred_common_name || name;
             const photoUrl = r.taxon?.default_photo?.medium_url || r.taxon?.default_photo?.square_url || '';
             const photoBase64 = photoUrl ? await fetchBase64Image(photoUrl) : '';
-            return { name, commonName, photoBase64 };
+            return { name, commonName, photoUrl, photoBase64 };
           });
           const resolvedDetails = await Promise.all(photoPromises);
-
+          
           ecology = {
             taxa: parsedTaxa,
             taxaDetails: resolvedDetails
@@ -261,6 +271,28 @@ export async function GET(request: Request) {
       } catch (err) {
         console.error('Server-side ecology fetch error:', err);
       }
+      
+      // Ensure fallbacks have their base64 loaded if they are used
+      if (ecology && ecology.taxaDetails) {
+        const needsBase64 = ecology.taxaDetails.some(t => !t.photoBase64);
+        if (needsBase64) {
+          const photoPromises = ecology.taxaDetails.map(async (item: any) => {
+            if (!item.photoBase64) {
+              let urlToFetch = item.photoUrl;
+              if (!urlToFetch) {
+                // Try to map name back to zoneFallbacks
+                const defaultItem = zoneFallbacks[zone].taxaDetails.find(d => d.name === item.name);
+                urlToFetch = defaultItem?.photoUrl || '';
+              }
+              const base64 = urlToFetch ? await fetchBase64Image(urlToFetch) : '';
+              return { name: item.name, commonName: item.commonName, photoBase64: base64 };
+            }
+            return item;
+          });
+          ecology.taxaDetails = await Promise.all(photoPromises);
+        }
+      }
+      
       return ecology;
     })();
 
@@ -350,7 +382,7 @@ export async function GET(request: Request) {
           }
         }
 
-        let guildFileName = 'arid_acacia_guild.png';
+        let guildFileName = 'nano_banana_guild.png';
         let guildMime = 'image/png';
         if (climateZone === 'Tropical') {
           guildFileName = 'tropical_banana_guild.png';

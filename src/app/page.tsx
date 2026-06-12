@@ -422,7 +422,7 @@ export default function Home() {
                       ← Modify Boundaries / Details
                     </button>
                   </div>
-                  <Report location={location} boundaryCoords={boundaryCoords} userData={userData} />
+                  <Report location={location} boundaryCoords={boundaryCoords} userData={userData} config={config} />
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-10 space-y-6 select-none animate-fade-in">

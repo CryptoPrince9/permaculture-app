@@ -22,9 +22,13 @@ interface ReportProps {
     goals: string;
     budget: string;
   };
+  config?: {
+    methodology: string;
+    financialStrategy: string[];
+  };
 }
 
-export default function Report({ location, boundaryCoords, userData }: ReportProps) {
+export default function Report({ location, boundaryCoords, userData, config }: ReportProps) {
   const [climate, setClimate] = useState<ClimateData | null>(null);
   const [elevation, setElevation] = useState<ElevationData | null>(null);
   const [soil, setSoil] = useState<SoilData | null>(null);
@@ -178,12 +182,12 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
           let zoneName = "Sahelian";
           let fallbackClimate = { temperature: 24.5, precipitation: 1.2, windSpeed: 12.5, windDirection: 45, solarRadiation: 18.2 };
           let fallbackEcology = { 
-            taxa: ['Acacia tortilis', 'Adansonia digitata', 'Moringa oleifera', 'Azadirachta indica'],
+            taxa: ['Acacia tortilis', 'Adansonia digitata', 'Vulpes zerda', 'Camelus dromedarius'],
             taxaDetails: [
-              { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: '' },
-              { name: 'Adansonia digitata', commonName: 'African Baobab', photoBase64: '' },
-              { name: 'Moringa oleifera', commonName: 'Moringa tree', photoBase64: '' },
-              { name: 'Azadirachta indica', commonName: 'Neem tree', photoBase64: '' }
+              { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=400' },
+              { name: 'Adansonia digitata', commonName: 'African Baobab', photoBase64: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=400' },
+              { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoBase64: 'https://images.unsplash.com/photo-1574063413132-355dbfd83e82?w=400' },
+              { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoBase64: 'https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=400' }
             ]
           };
 
@@ -193,10 +197,10 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
             fallbackEcology = {
               taxa: ['Malus domestica', 'Symphytum officinale', 'Vulpes vulpes', 'Sciurus carolinensis'],
               taxaDetails: [
-                { name: 'Malus domestica', commonName: 'Apple Tree', photoBase64: '' },
-                { name: 'Symphytum officinale', commonName: 'Comfrey', photoBase64: '' },
-                { name: 'Vulpes vulpes', commonName: 'Red Fox', photoBase64: '' },
-                { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoBase64: '' }
+                { name: 'Malus domestica', commonName: 'Apple Tree', photoBase64: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?w=400' },
+                { name: 'Symphytum officinale', commonName: 'Comfrey', photoBase64: 'https://images.unsplash.com/photo-1508873696983-2df519f0397e?w=400' },
+                { name: 'Vulpes vulpes', commonName: 'Red Fox', photoBase64: 'https://images.unsplash.com/photo-1470093851219-69951fcbb533?w=400' },
+                { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoBase64: 'https://images.unsplash.com/photo-1504244729573-6196d76f303c?w=400' }
               ]
             };
           } else if (absLat > 22 && absLat <= 35) {
@@ -205,10 +209,10 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
             fallbackEcology = {
               taxa: ['Olea europaea', 'Ficus carica', 'Lynx pardinus', 'Genetta genetta'],
               taxaDetails: [
-                { name: 'Olea europaea', commonName: 'Olive Tree', photoBase64: '' },
-                { name: 'Ficus carica', commonName: 'Common Fig', photoBase64: '' },
-                { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoBase64: '' },
-                { name: 'Genetta genetta', commonName: 'Common Genet', photoBase64: '' }
+                { name: 'Olea europaea', commonName: 'Olive Tree', photoBase64: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=400' },
+                { name: 'Ficus carica', commonName: 'Common Fig', photoBase64: 'https://images.unsplash.com/photo-1598965675045-45c5e72c7d05?w=400' },
+                { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoBase64: 'https://images.unsplash.com/photo-1602491453977-18a86085a44f?w=400' },
+                { name: 'Genetta genetta', commonName: 'Common Genet', photoBase64: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=400' }
               ]
             };
           } else if (absLat < 10) {
@@ -217,10 +221,10 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
             fallbackEcology = {
               taxa: ['Mangifera indica', 'Persea americana', 'Panthera onca', 'Ramphastos toco'],
               taxaDetails: [
-                { name: 'Mangifera indica', commonName: 'Mango Tree', photoBase64: '' },
-                { name: 'Persea americana', commonName: 'Avocado Tree', photoBase64: '' },
-                { name: 'Panthera onca', commonName: 'Jaguar', photoBase64: '' },
-                { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoBase64: '' }
+                { name: 'Mangifera indica', commonName: 'Mango Tree', photoBase64: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5cf?w=400' },
+                { name: 'Persea americana', commonName: 'Avocado Tree', photoBase64: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400' },
+                { name: 'Panthera onca', commonName: 'Jaguar', photoBase64: 'https://images.unsplash.com/photo-1551845187-578f244192b0?w=400' },
+                { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoBase64: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=400' }
               ]
             };
           }
@@ -232,7 +236,19 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
           setElevation(fallbackElevation);
           setSoil(fallbackSoil);
           setEcology(fallbackEcology);
-          setMaps(null);
+          const fallbackMaps = {
+            satelliteMap: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800',
+            topoMap: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
+            streetMap: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800',
+            hillshadeMap: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800',
+            bananaGuild: 'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=800',
+            waterHarvesting: 'https://images.unsplash.com/photo-1508873696983-2df519f0397e?w=800',
+            gravityDrip: 'https://images.unsplash.com/photo-1463123081488-729f378ea36a?w=800',
+            contourSwales: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800',
+            concentricZoning: 'https://images.unsplash.com/photo-1533038590840-1cde6b66b706?w=800',
+            functionalConcept: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800'
+          };
+          setMaps(fallbackMaps);
           setGeneratedReport(generateReportContent(fallbackClimate, fallbackElevation, fallbackSoil, fallbackEcology, location.lat, location.lng));
           setFetchedLocation(location);
           
@@ -354,6 +370,7 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
                     sunData={sunData}
                     generatedReport={generatedReport}
                     maps={maps}
+                    config={config}
                   />
                 }
                 fileName={`${(userData?.projectName || '').trim().replace(/\s+/g, '_') || 'Permaculture'}_PDC_Portfolio.pdf`}

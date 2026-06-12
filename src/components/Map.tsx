@@ -157,6 +157,66 @@ function MapComponent({ onLocationSelect, location, boundaryCoords }: MapProps) 
     }
   };
 
+  const _onEdited = (e: any) => {
+    try {
+      const { layers } = e;
+      layers.eachLayer((layer: any) => {
+        let latlng = layer.getLatLng ? layer.getLatLng() : null;
+        let area = 0;
+        let dimensions = "Polygon";
+        let boundary: Array<{ lat: number, lng: number }> | null = null;
+        
+        if (layer && typeof layer.getBounds === 'function') {
+          const bounds = layer.getBounds();
+          if (!latlng) latlng = bounds.getCenter();
+          
+          const northEast = bounds.getNorthEast();
+          const southWest = bounds.getSouthWest();
+          const northWest = L.latLng(northEast.lat, southWest.lng);
+          
+          const width = northWest.distanceTo(northEast);
+          const height = northWest.distanceTo(southWest);
+          dimensions = `${width.toFixed(1)}m x ${height.toFixed(1)}m`;
+          
+          const rawLatLngs = layer.getLatLngs ? layer.getLatLngs() : null;
+          const flatLatLngs = flattenLatLngs(rawLatLngs);
+          
+          if (flatLatLngs.length >= 3) {
+            let calcArea = 0;
+            const radius = 6378137;
+            const len = flatLatLngs.length;
+            for (let i = 0; i < len; i++) {
+              const p1 = flatLatLngs[i];
+              const p2 = flatLatLngs[(i + 1) % len];
+              if (p1 && p2 && typeof p1.lat === 'number' && typeof p1.lng === 'number' && typeof p2.lat === 'number' && typeof p2.lng === 'number') {
+                const radLat1 = (p1.lat * Math.PI) / 180;
+                const radLat2 = (p2.lat * Math.PI) / 180;
+                const radLng1 = (p1.lng * Math.PI) / 180;
+                const radLng2 = (p2.lng * Math.PI) / 180;
+                calcArea += (radLng2 - radLng1) * (2 + Math.sin(radLat1) + Math.sin(radLat2));
+              }
+            }
+            area = Math.abs((calcArea * radius * radius) / 2);
+            boundary = flatLatLngs.map(p => ({ lat: p.lat, lng: p.lng }));
+          } else {
+            area = width * height * 0.75;
+          }
+        }
+        
+        if (latlng && boundary) {
+          console.log(`Layer edited: lat=${latlng.lat}, lng=${latlng.lng}, area=${area}, dim=${dimensions}`);
+          onLocationSelect({ lat: latlng.lat, lng: latlng.lng }, area > 0 ? { area, dimensions } : null, boundary);
+        }
+      });
+    } catch (err) {
+      console.error("Error handling Leaflet layer edit:", err);
+    }
+  };
+
+  const _onDeleted = (e: any) => {
+    onLocationSelect(location || { lat: 51.505, lng: -0.09 }, null, null);
+  };
+
   const centerToUse: LatLngExpression = location ? [location.lat, location.lng] : defaultCenter;
 
   return (
@@ -173,17 +233,12 @@ function MapComponent({ onLocationSelect, location, boundaryCoords }: MapProps) 
         </Marker>
       )}
 
-      {boundaryCoords && boundaryCoords.length >= 3 && (
-        <Polygon
-          positions={boundaryCoords.map(c => [c.lat, c.lng])}
-          pathOptions={{ color: '#16a34a', fillColor: '#22c55e', fillOpacity: 0.2, weight: 3 }}
-        />
-      )}
-
       <FeatureGroup>
         <EditControl
           position="topright"
           onCreated={_onCreated}
+          onEdited={_onEdited}
+          onDeleted={_onDeleted}
           draw={{
             rectangle: true,
             polyline: true,
@@ -193,6 +248,12 @@ function MapComponent({ onLocationSelect, location, boundaryCoords }: MapProps) 
             polygon: true
           }}
         />
+        {boundaryCoords && boundaryCoords.length >= 3 && (
+          <Polygon
+            positions={boundaryCoords.map(c => [c.lat, c.lng])}
+            pathOptions={{ color: '#16a34a', fillColor: '#22c55e', fillOpacity: 0.2, weight: 3 }}
+          />
+        )}
       </FeatureGroup>
     </MapContainer>
   );
