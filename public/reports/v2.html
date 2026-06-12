@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Permaculture Design | Senegal Site 14.4587, -16.0126</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1b4332;
+            --secondary: #2d6a4f;
+            --accent: #95d5b2;
+            --background: #f0f2f0;
+            --text: #081c15;
+            --glass: rgba(255, 255, 255, 0.85);
+            --card-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+            --gold: #d4a373;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--background); 
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--primary); }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 250px;
+            background: var(--primary);
+            color: white;
+            padding: 40px 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        nav a { color: white; text-decoration: none; font-size: 0.9rem; opacity: 0.7; transition: 0.3s; }
+        nav a:hover, nav a.active { opacity: 1; font-weight: 600; padding-left: 10px; }
+
+        main { margin-left: 250px; padding: 40px; }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        /* Hero */
+        .hero {
+            height: 40vh;
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1542601906990-b4d3fb773b09?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .hero h1 { color: white; font-size: 3.5rem; }
+
+        /* Sections */
+        section { margin-bottom: 100px; }
+        .section-header { border-left: 5px solid var(--accent); padding-left: 20px; margin-bottom: 40px; }
+
+        /* Grid Layouts */
+        .grid-2 { display: grid; grid-template-cols: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-cols: repeat(3, 1fr); gap: 20px; }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #eee;
+        }
+
+        .map-container {
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+
+        .map-container img { width: 100%; height: auto; display: block; }
+
+        /* Technical Specs */
+        .spec-list { list-style: none; }
+        .spec-list li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .spec-list span:last-child { font-weight: 700; color: var(--secondary); }
+
+        /* ROI Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; background: var(--accent); color: var(--primary); padding: 15px; }
+        td { padding: 15px; border-bottom: 1px solid #eee; }
+
+        /* Badges */
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-right: 5px; }
+        .badge-green { background: #d8f3dc; color: #1b4332; }
+        .badge-gold { background: #fefae0; color: #bc6c25; }
+
+        @media (max-width: 1024px) {
+            nav { width: 100%; height: auto; position: relative; }
+            main { margin-left: 0; }
+            .grid-2 { grid-template-cols: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h3 style="color: white; margin-bottom: 20px;">DESIGN V2.0</h3>
+        <a href="#mapping">Mapping & LiDAR</a>
+        <a href="#water">Water & Irrigation</a>
+        <a href="#planting">Planting Design</a>
+        <a href="#livestock">Animal Integration</a>
+        <a href="#energy">Off-Grid Power</a>
+        <a href="#recycling">Waste Recycling</a>
+        <a href="#financial">ROI & Financials</a>
+        <a href="#storage">Storage & Infra</a>
+    </nav>
+
+    <main>
+        <div class="container">
+            <div class="hero">
+                <div>
+                    <h1>Integrated Arid Oasis</h1>
+                    <p>Senegal Master Permaculture Design | 2500m²</p>
+                </div>
+            </div>
+
+            <!-- Mapping Section -->
+            <section id="mapping">
+                <div class="section-header">
+                    <h2>01. Mapping & Site Intelligence</h2>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>LiDAR Topographic Map</h3>
+                        <p>High-resolution terrain mapping revealing the subtle 1.2% slope towards the West. This data dictates our gravity-fed swale and greywater systems.</p>
+                        <div class="map-container" style="margin-top: 20px;">
+                            <img src="./permaculture_lidar_map_1778236550831.png" alt="LiDAR Map">
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Permaculture Compass & Sun Sector</h3>
+                        <p>Analysis of the 14.45°N sun path. Solar harvest peaks at 15° South tilt. Protection against the Northeast Harmattan winds is prioritized in Zone 4.</p>
+                        <div class="map-container" style="margin-top: 20px;">
+                            <img src="./permaculture_sun_compass_map_1778236566115.png" alt="Sun Compass Map">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Water Section -->
+            <section id="water">
+                <div class="section-header">
+                    <h2>02. Water Harvesting & Irrigation</h2>
+                </div>
+                <div class="card">
+                    <div class="grid-2">
+                        <div>
+                            <h3>Hydraulic Swarm</h3>
+                            <p>An integrated approach to water sovereignty in an arid climate.</p>
+                            <ul class="spec-list" style="margin-top: 20px;">
+                                <li><span>Olla Irrigation</span> <span>Targeted Zone 1</span></li>
+                                <li><span>Fog Nets (Exp.)</span> <span>Back Ridge Zone 5</span></li>
+                                <li><span>Rain Storage</span> <span>20,000L Tower</span></li>
+                                <li><span>Greywater recycling</span> <span>Mulch Basins</span></li>
+                            </ul>
+                        </div>
+                        <div style="background: var(--background); padding: 20px; border-radius: 15px;">
+                            <h4>The Olla Strategy</h4>
+                            <p style="font-size: 0.85rem;">Terracotta pots buried in sandy Dior soil. Refill every 3 days. Capillary action delivers water directly to root zones, reducing evaporation by 90%.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Planting Design -->
+            <section id="planting">
+                <div class="section-header">
+                    <h2>03. Multi-Layer Planting Design</h2>
+                </div>
+                <div class="grid-3">
+                    <div class="card">
+                        <span class="badge badge-green">Overstory</span>
+                        <h4>Baobab & Mango</h4>
+                        <p style="font-size: 0.8rem;">Long-term carbon storage and primary economic yields.</p>
+                    </div>
+                    <div class="card">
+                        <span class="badge badge-green">Mid-Story</span>
+                        <h4>Moringa & Cashew</h4>
+                        <p style="font-size: 0.8rem;">Fast-growing 'Miracle' trees for fodder and cash crops.</p>
+                    </div>
+                    <div class="card">
+                        <span class="badge badge-green">Support</span>
+                        <h4>Acacia & Neem</h4>
+                        <p style="font-size: 0.8rem;">Nitrogen fixation, pest control, and windbreaks.</p>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 20px;">
+                    <h4>Native Species & Biodiversity</h4>
+                    <p>Integration of <strong>Senegal Gum</strong> (*Acacia senegal*), <strong>Ziziphus mauritiana</strong> (Jujube), and native grasses like <strong>Vetiver</strong> for erosion control on swale berms.</p>
+                </div>
+            </section>
+
+            <!-- Livestock Section -->
+            <section id="livestock">
+                <div class="section-header">
+                    <h2>04. Animal & Livestock Integration</h2>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <span class="badge badge-gold">🐔 Chickens</span>
+                            <span class="badge badge-gold">🐐 Goats</span>
+                            <span class="badge badge-gold">🦆 Ducks</span>
+                        </div>
+                        <h3>The Protein Loop</h3>
+                        <p>Animals provide high-quality manure for Zai pits and pest control. Geese serve as 'security guards' and weed management in the orchard.</p>
+                    </div>
+                    <div class="card">
+                        <span class="badge badge-gold">🐝 Apiculture</span>
+                        <h3>Honey Sovereignty</h3>
+                        <p>2-3 Kenyan Top Bar hives located in the Acacia/Baobab buffer zone. Pollination services increase mango yields by 40%.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Energy & Waste -->
+            <section id="energy">
+                <div class="section-header">
+                    <h2>05. Off-Grid Systems & Waste Loop</h2>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Off-Grid Power</h3>
+                        <p>5kW Solar Array + 10kWh Storage. powers the borehole pump and post-harvest cold storage.</p>
+                        <div class="map-container" style="margin-top: 15px;">
+                            <img src="./permaculture_infrastructure_plan_1778236579728.png" alt="Infrastructure Map">
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Black & Greywater</h3>
+                        <p><strong>Greywater:</strong> Directed to mulch basins around Cashew trees.<br><strong>Blackwater:</strong> EcoSan composting toilets. Safe pathogen reduction via 12-month aerobic decomposition.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Financial Section -->
+            <section id="financial">
+                <div class="section-header">
+                    <h2>06. Financial Projections & ROI</h2>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>EST. CAPEX</th>
+                                <th>Annual Yield (Est)</th>
+                                <th>ROI Period</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Borehole & Solar Pump</td>
+                                <td>$4,500</td>
+                                <td>Water Security</td>
+                                <td>Critical</td>
+                            </tr>
+                            <tr>
+                                <td>Fruit Orchard (Cashew/Mango)</td>
+                                <td>$1,200</td>
+                                <td>$2,500+</td>
+                                <td>4-6 Years</td>
+                            </tr>
+                            <tr>
+                                <td>Vegetables & Herbs</td>
+                                <td>$500</td>
+                                <td>$1,800</td>
+                                <td>< 1 Year</td>
+                            </tr>
+                            <tr>
+                                <td>Livestock (Goats/Poultry)</td>
+                                <td>$2,000</td>
+                                <td>$1,200</td>
+                                <td>2 Years</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top: 20px; font-size: 0.9rem; color: #666;">*Calculations based on 2500m² intensive management and Dakar premium market access.</p>
+                </div>
+            </section>
+
+            <!-- Storage Section -->
+            <section id="storage">
+                <div class="section-header">
+                    <h2>07. Storage & Infrastructure</h2>
+                </div>
+                <div class="card">
+                    <h3>The Processing Hub</h3>
+                    <p>A multi-purpose shed near the road facade (Zone 0) for tool storage, seed saving, and post-harvest drying of Moringa leaves and Cashew nuts. Strategic placement allows for efficient loading onto road transport.</p>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer style="background: var(--primary); color: white; padding: 40px; text-align: center; margin-left: 250px;">
+        <p>© 2026 Permaculture Intelligence Swarm | Senegal Site 14.4587, -16.0126</p>
+    </footer>
+
+</body>
+</html>

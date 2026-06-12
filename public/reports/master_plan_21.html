@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21-Section Permaculture Master Plan | Senegal Site</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1b4332;
+            --secondary: #2d6a4f;
+            --accent: #95d5b2;
+            --background: #f0f2f0;
+            --text: #081c15;
+            --glass: rgba(255, 255, 255, 0.9);
+            --card-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            --gold: #d4a373;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--background); 
+            color: var(--text);
+            display: flex;
+        }
+
+        /* Navigation Sidebar */
+        aside {
+            width: 300px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            background: var(--primary);
+            color: white;
+            padding: 30px 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        aside h2 { font-family: 'Outfit', sans-serif; margin-bottom: 30px; font-size: 1.2rem; color: var(--accent); border-bottom: 2px solid var(--secondary); padding-bottom: 10px; }
+        aside ul { list-style: none; }
+        aside li { margin-bottom: 8px; }
+        aside a { 
+            color: rgba(255,255,255,0.7); 
+            text-decoration: none; 
+            font-size: 0.85rem; 
+            display: block; 
+            padding: 10px; 
+            border-radius: 8px; 
+            transition: 0.2s;
+        }
+        aside a:hover, aside a.active { background: var(--secondary); color: white; padding-left: 15px; }
+
+        /* Main Content */
+        main { flex: 1; padding: 60px; background: white; }
+        .container { max-width: 900px; margin: 0 auto; }
+
+        section { margin-bottom: 120px; scroll-margin-top: 60px; }
+        .section-num { font-size: 4rem; font-weight: 800; color: #f0f0f0; margin-bottom: -2rem; line-height: 1; }
+        h1 { font-family: 'Outfit', sans-serif; font-size: 3rem; margin-bottom: 20px; color: var(--primary); }
+        h2 { font-family: 'Outfit', sans-serif; font-size: 2.2rem; margin-bottom: 20px; color: var(--primary); border-left: 8px solid var(--accent); padding-left: 20px; }
+        h3 { font-family: 'Outfit', sans-serif; margin-bottom: 15px; color: var(--secondary); }
+        
+        p { margin-bottom: 20px; font-size: 1.1rem; color: #444; line-height: 1.8; }
+        
+        .card { 
+            background: #f9fbf9; 
+            padding: 40px; 
+            border-radius: 30px; 
+            margin-bottom: 30px; 
+            box-shadow: var(--card-shadow);
+            border: 1px solid #eee;
+        }
+
+        .img-container { 
+            border-radius: 20px; 
+            overflow: hidden; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            margin: 30px 0;
+            background: #eee;
+        }
+        .img-container img { width: 100%; height: auto; display: block; }
+
+        .badge { display: inline-block; padding: 5px 15px; background: var(--accent); color: var(--primary); border-radius: 50px; font-weight: 700; font-size: 0.8rem; margin-bottom: 15px; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: var(--primary); color: white; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #eee; }
+
+        footer { margin-top: 100px; padding: 40px; text-align: center; color: #888; border-top: 1px solid #eee; }
+
+        @media (max-width: 1100px) {
+            aside { display: none; }
+            main { padding: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <h2>PORTFOLIO INDEX</h2>
+        <ul>
+            <li><a href="#s1">01 | Title & Location</a></li>
+            <li><a href="#s2">02 | Client Profile</a></li>
+            <li><a href="#s3">03 | Client Interview</a></li>
+            <li><a href="#s4">04 | Permaculture Ethics</a></li>
+            <li><a href="#s5">05 | Methodology</a></li>
+            <li><a href="#s6">06 | Base Map</a></li>
+            <li><a href="#s7">07 | Existing Features</a></li>
+            <li><a href="#s8">08 | Goals Overlay</a></li>
+            <li><a href="#s9">09 | Sector Analysis</a></li>
+            <li><a href="#s10">10 | Slope and Aspect</a></li>
+            <li><a href="#s11">11 | Water and Flow</a></li>
+            <li><a href="#s12">12 | Soil Analysis</a></li>
+            <li><a href="#s13">13 | Microclimates</a></li>
+            <li><a href="#s14">14 | Flora and Fauna</a></li>
+            <li><a href="#s15">15 | Infrastructure</a></li>
+            <li><a href="#s16">16 | Conceptual Design</a></li>
+            <li><a href="#s17">17 | Zones Map</a></li>
+            <li><a href="#s18">18 | Final Master Plan</a></li>
+            <li><a href="#s19">19 | Water Component</a></li>
+            <li><a href="#s20">20 | Soil/Plant Component</a></li>
+            <li><a href="#s21">21 | Implementation</a></li>
+        </ul>
+    </aside>
+
+    <main>
+        <div class="container">
+            <header style="margin-bottom: 80px;">
+                <span class="badge">OSU PDC PRO TEMPLATE</span>
+                <h1>Permaculture Master Plan</h1>
+                <p>Senegal Semi-Arid Regenerative Site | 25m x 100m</p>
+            </header>
+
+            <!-- Section 1 -->
+            <section id="s1">
+                <div class="section-num">01</div>
+                <h2>Project Title & Location</h2>
+                <div class="card">
+                    <h3>Integrated Arid Oasis</h3>
+                    <p><strong>Location:</strong> 14°27'31.45"N, 16° 0'45.51"W (Senegal)</p>
+                    <p>The site is a rectangular 2500m² plot located in the semi-arid Sahelian belt of Senegal. The climate is characterized by a short, intense rainy season and a long dry season with high evaporation rates.</p>
+                </div>
+            </section>
+
+            <!-- Section 2 & 3 -->
+            <section id="s2">
+                <div class="section-num">02</div>
+                <h2>Client Profile & Needs</h2>
+                <div class="card">
+                    <p>The client seeks a fully autonomous, productive landscape that serves as both a primary residence and a commercial regenerative farm. Key needs include high-quality animal protein, diverse fruit production, and water sovereignty.</p>
+                </div>
+            </section>
+
+            <!-- Section 4 & 5 -->
+            <section id="s4">
+                <div class="section-num">04</div>
+                <h2>Ethics & Methodology</h2>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Permaculture Ethics</h3>
+                        <p><strong>Earth Care:</strong> Soil restoration via Zai pits and Biochar.<br><strong>People Care:</strong> Food security and cool microclimates.<br><strong>Fair Share:</strong> Surplus distribution to local cooperatives.</p>
+                    </div>
+                </div>
+                <div class="img-container">
+                    <img src="./permaculture_ethics_timeline_21.png" alt="Ethics and Timeline">
+                </div>
+            </section>
+
+            <!-- Mapping Sections (6, 7, 8) -->
+            <section id="s6">
+                <div class="section-num">06</div>
+                <h2>Base Map & Features</h2>
+                <div class="img-container">
+                    <img src="./permaculture_aider_map_1778236133557.png" alt="Base Map">
+                </div>
+                <p>The site is flat with a subtle 1.2% westward slope. Access is via the 25m road facade on the East side.</p>
+            </section>
+
+            <!-- Analysis (9, 10, 11, 12, 13, 14) -->
+            <section id="s9">
+                <div class="section-num">09</div>
+                <h2>Sector Analysis</h2>
+                <div class="img-container">
+                    <img src="./permaculture_sun_compass_map_1778236566115.png" alt="Sun and Wind Analysis">
+                </div>
+                <p>Key energy flows: High solar radiation from the South/Zenith. Predominant Harmattan winds from the NE during the dry season require dense windbreaks.</p>
+            </section>
+
+            <section id="s11">
+                <div class="section-num">11</div>
+                <h2>Water and Flow Analysis</h2>
+                <div class="img-container">
+                    <img src="./permaculture_swales_map_1778236165990.png" alt="Swale and Hydrology Plan">
+                </div>
+                <p>Hydrology is managed via three primary swales on contour and a series of Zai pits to capture 100% of on-site runoff.</p>
+            </section>
+
+            <section id="s12">
+                <div class="section-num">12</div>
+                <h2>Soil Analysis</h2>
+                <div class="card">
+                    <h3>Pedology Report</h3>
+                    <p><strong>Type:</strong> Dior Soil (Sandy Arenosol).<br><strong>pH:</strong> 7.2 (Neutral).<br><strong>Organic Carbon:</strong> Low (Requires intensive mulching and green manures).</p>
+                </div>
+            </section>
+
+            <!-- Design Components (16, 17, 18) -->
+            <section id="s16">
+                <div class="section-num">16</div>
+                <h2>Conceptual Design</h2>
+                <div class="img-container">
+                    <img src="./permaculture_bubble_diagram_21.png" alt="Bubble Diagram">
+                </div>
+                <p>Grouping functions for maximum efficiency: House near the road (Zone 0) for access, Intensive production surrounding it (Zone 1), and animals as a nutrient cycle in Zone 3.</p>
+            </section>
+
+            <section id="s17">
+                <div class="section-num">17</div>
+                <h2>Zones Map</h2>
+                <div class="img-container">
+                    <img src="./permaculture_zones_map_21.png" alt="Zones Map">
+                </div>
+                <p>A standard Zone 0-5 hierarchy implemented for the 2500m² site.</p>
+            </section>
+
+            <section id="s18">
+                <div class="section-num">18</div>
+                <h2>Final Master Plan</h2>
+                <div class="img-container">
+                    <img src="./permaculture_infrastructure_plan_1778236579728.png" alt="Master Infrastructure Plan">
+                </div>
+                <p>The complete integrated layout featuring housing, 5kW solar array, animal coops, and the food forest orchard.</p>
+            </section>
+
+            <!-- Components (19, 20, 21) -->
+            <section id="s19">
+                <div class="section-num">19</div>
+                <h2>Water Management Component</h2>
+                <div class="card">
+                    <p>Olla irrigation buried in Zone 1. Fog harvesting nets at the back ridge. Greywater directed to the Cashew orchard. 20,000L central tower storage.</p>
+                </div>
+            </section>
+
+            <section id="s20">
+                <div class="section-num">20</div>
+                <h2>Soil and Plant Component</h2>
+                <div class="card">
+                    <h3>Guild Strategy</h3>
+                    <p><strong>Overstory:</strong> Baobab, Mango, Neem.<br><strong>Understory:</strong> Moringa, Cashew, Pigeon Pea.<br><strong>Groundcover:</strong> Sweet Potato, Vetiver Grass.</p>
+                </div>
+            </section>
+
+            <section id="s21">
+                <div class="section-num">21</div>
+                <h2>Implementation Timeline</h2>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Phase</th>
+                                <th>Action</th>
+                                <th>Timing</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Phase 1</td>
+                                <td>Earthworks, Swales, Borehole, Solar</td>
+                                <td>Month 0-3</td>
+                            </tr>
+                            <tr>
+                                <td>Phase 2</td>
+                                <td>Pioneer Planting (Neem, Acacia), Animal Pens</td>
+                                <td>Month 3-6</td>
+                            </tr>
+                            <tr>
+                                <td>Phase 3</td>
+                                <td>Fruit Tree Installation, Guild Infill</td>
+                                <td>Month 6-12</td>
+                            </tr>
+                            <tr>
+                                <td>Maturity</td>
+                                <td>Yield Scaling, Processing Hub completion</td>
+                                <td>Year 2-5</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <footer>
+                <p>© 2026 Permaculture Intelligence Swarm | Senegal Master Plan V3.0 (21-Section Portfolio)</p>
+            </footer>
+
+        </div>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+name: Headless QGIS Automated GIS Pipeline
+
+on:
+  repository_dispatch:
+    types: [run-gis-pipeline]
+  workflow_dispatch:
+    inputs:
+      lat:
+        description: 'Center Latitude'
+        required: true
+        default: '14.43204'
+      lng:
+        description: 'Center Longitude'
+        required: true
+        default: '-16.25148'
+      boundary:
+        description: 'JSON Boundary Coordinates String'
+        required: false
+        default: '[]'
+
+jobs:
+  run-gis:
+    runs-on: ubuntu-latest
+    container:
+      image: qgis/qgis:release-3_28  # Uses the official LTS QGIS headless Docker image
+      options: --user root
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install System Dependencies
+        run: |
+          apt-get update && apt-get install -y python3-pip python3-requests python3-matplotlib python3-numpy python3-gdal python3-shapely
+
+      - name: Save Boundary Coordinates Payload
+        run: |
+          mkdir -p public/gis-outputs
+          echo '${{ github.event.client_payload.boundary || github.event.inputs.boundary }}' > public/gis-outputs/boundary.json
+          echo "Lat: ${{ github.event.client_payload.lat || github.event.inputs.lat }}"
+          echo "Lng: ${{ github.event.client_payload.lng || github.event.inputs.lng }}"
+
+      - name: Execute Headless QGIS Python Script
+        env:
+          QT_QPA_PLATFORM: offscreen  # Force Qt to run headlessly without an X server
+        run: |
+          python3 scripts/process_gis.py \
+            --lat "${{ github.event.client_payload.lat || github.event.inputs.lat }}" \
+            --lng "${{ github.event.client_payload.lng || github.event.inputs.lng }}" \
+            --boundary-file "public/gis-outputs/boundary.json" \
+            --output-dir "public/gis-outputs"
+
+      - name: Commit and Push Generated Maps
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "PDC GIS Orchestrator"
+          git config --global user.email "gis-orchestrator@permaculture.local"
+          git add public/gis-outputs/
+          git diff-index --quiet HEAD || git commit -m "Auto-generated QGIS/LiDAR high-res contours for project"
+          git push origin main || echo "No changes or branch locked"
+
+      - name: Trigger Web App Redeploy
+        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"

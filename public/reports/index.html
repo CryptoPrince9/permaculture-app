@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permaculture Site Report | Senegal 14.4587, -16.0126</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1b4332;
+            --secondary: #2d6a4f;
+            --accent: #95d5b2;
+            --background: #f8f9fa;
+            --text: #081c15;
+            --glass: rgba(255, 255, 255, 0.8);
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--background); 
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 { font-family: 'Outfit', sans-serif; font-weight: 700; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+        /* Header */
+        header {
+            height: 60vh;
+            background: linear-gradient(135deg, rgba(27,67,50,0.9), rgba(45,106,79,0.8)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+        }
+
+        .header-content h1 { font-size: 4rem; letter-spacing: -2px; margin-bottom: 10px; }
+        .header-content p { font-size: 1.2rem; opacity: 0.9; font-weight: 300; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-cols: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: -60px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover { transform: translateY(-10px); }
+        .stat-card .value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+        .stat-card .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #666; }
+
+        /* Main Section */
+        section { margin: 80px 0; }
+        .section-title { font-size: 2.5rem; color: var(--primary); margin-bottom: 40px; text-align: center; }
+
+        /* Soil Data */
+        .soil-analysis {
+            display: grid;
+            grid-template-cols: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .soil-text { padding: 20px; }
+        .soil-tag {
+            display: inline-block;
+            padding: 5px 15px;
+            background: var(--accent);
+            color: var(--primary);
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+        }
+
+        /* Map Gallery */
+        .map-gallery {
+            display: grid;
+            grid-template-cols: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .map-item {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+        }
+
+        .map-item img { width: 100%; height: 500px; object-fit: cover; transition: scale 0.5s ease; }
+        .map-item:hover img { scale: 1.05; }
+        .map-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 30px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+        }
+
+        /* Techniques */
+        .technique-card {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #eee;
+        }
+
+        .technique-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+        .tech-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--accent);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .soil-analysis { grid-template-cols: 1fr; }
+            .map-gallery { grid-template-cols: 1fr; }
+            .header-content h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <h1>Senegal Permaculture Plan</h1>
+            <p>14°27'31.45"N, 16° 0'45.51"W | 25m x 100m Rectangular Plot</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value">430mm</div>
+                <div class="label">Annual Rainfall</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">Sandy</div>
+                <div class="label">Soil Texture</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">6.0</div>
+                <div class="label">Soil pH</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">2.5k</div>
+                <div class="label">m² Total Area</div>
+            </div>
+        </div>
+
+        <section id="analysis">
+            <h2 class="section-title">Site Intelligence Analysis</h2>
+            <div class="soil-analysis">
+                <div class="soil-text">
+                    <span class="soil-tag">GEOLOGY: SANDY ARENOSOL (DIOR)</span>
+                    <h3>Arid Resilience Strategy</h3>
+                    <p>The site is located in the Groundnut Basin of Senegal. The high sand content (84%) presents a challenge for water retention but an opportunity for deep-rooting species. The semi-arid climate requires a strictly hydraulic-focused design.</p>
+                    <ul style="margin-top: 20px; list-style: none;">
+                        <li>🌱 <strong>Organic Matter:</strong> Low (7.5 g/kg) - Focus on mulching.</li>
+                        <li>💧 <strong>Hydrology:</strong> Flash rains in July-Oct.</li>
+                        <li>☀️ <strong>Exposure:</strong> High UV index, requires shade guilds.</li>
+                    </ul>
+                </div>
+                <div class="stat-card" style="background: #fff; border: 2px dashed var(--accent);">
+                    <h3>Land Facade</h3>
+                    <p>25m Road Frontage</p>
+                    <p>100m Depth (90° Angle)</p>
+                    <div style="width: 50px; height: 150px; border: 2px solid var(--primary); margin: 20px auto; position: relative;">
+                        <span style="position: absolute; top: -20px; left: 10px; font-size: 10px;">ROAD</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="maps">
+            <h2 class="section-title">Strategic Design Maps</h2>
+            <div class="map-gallery">
+                <div class="map-item">
+                    <img src="./permaculture_aider_map_1778236133557.png" alt="Aider/Agroforestry Map">
+                    <div class="map-info">
+                        <h3>1. Aider Guilds</h3>
+                        <p>Faidherbia albida (Agroforestry)</p>
+                    </div>
+                </div>
+                <div class="map-item">
+                    <img src="./permaculture_zai_pits_map_1778236152204.png" alt="Zai Pits Map">
+                    <div class="map-info">
+                        <h3>2. Zai Pits</h3>
+                        <p>Intensive Water Harvesting</p>
+                    </div>
+                </div>
+                <div class="map-item">
+                    <img src="./permaculture_swales_map_1778236165990.png" alt="Swales Map">
+                    <div class="map-info">
+                        <h3>3. Hydraulic Swales</h3>
+                        <p>Contour Erosion Control</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="plan">
+            <h2 class="section-title">Implementation Framework</h2>
+            
+            <div class="technique-card">
+                <div class="technique-header">
+                    <div class="tech-icon">🌳</div>
+                    <h3>Technique 1: The Aider (Faidherbia albida)</h3>
+                </div>
+                <p>Planting Faidherbia albida in a 10m grid. This tree provides nitrogen fixation and reverse phenology—dropping leaves during the rainy season to fertilize millet crops while providing shade during the harsh dry season.</p>
+            </div>
+
+            <div class="technique-card">
+                <div class="technique-header">
+                    <div class="tech-icon">🕳️</div>
+                    <h3>Technique 2: Zai Pits Swarm</h3>
+                </div>
+                <p>Implementation of 30cm deep pits spaced 60cm apart. Pits are filled with compost and manure before the first rains. This method increases yields by up to 300% in sandy Sahelian soils.</p>
+            </div>
+
+            <div class="technique-card">
+                <div class="technique-header">
+                    <div class="tech-icon">🌊</div>
+                    <h3>Technique 3: Contour Swales</h3>
+                    <p style="font-size: 0.8rem; font-weight: normal; color: #666;">On-Contour Trenches</p>
+                </div>
+                <p>3 major swales excavated to catch sheet runoff. Berms planted with Vetiver grass for stability and Baobab/Cashew trees for economic value. Swales will be 2m wide and 0.5m deep.</p>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>Generated by Permaculture Intelligence Swarm | 2026</p>
+    </footer>
+
+</body>
+</html>
