@@ -35,5 +35,6 @@ A Next.js application for generating comprehensive permaculture site reports.
     - View data on-screen.
     - Download a comprehensive 21-section PDF report.
 
-## Known Issues
-- The production build (`npm run build`) may fail due to dependency conflicts. Please use `npm run dev` for the best experience.
+## Deployments
+- **Production Build**: Verified and fully compiling with `npm run build`.
+- **Automatic CI/CD**: Linked directly to the GitHub repository. Every push to the `main` branch automatically triggers a new deployment on Vercel.
