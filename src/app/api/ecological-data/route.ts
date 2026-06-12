@@ -145,48 +145,118 @@ export async function GET(request: Request) {
       return soil;
     })();
 
+    // Helper to get climate zone
+    const getClimateZone = (latVal: number, tempVal: number, precipVal: number): 'Arid' | 'Tropical' | 'Temperate' | 'Subtropical' => {
+      const absLat = Math.abs(latVal);
+      const annualPrecip = precipVal * 365;
+      if (tempVal >= 22 && annualPrecip >= 1200) {
+        return 'Tropical';
+      } else if (absLat > 35) {
+        return 'Temperate';
+      } else if (absLat > 22 && absLat <= 35) {
+        return 'Subtropical';
+      } else {
+        if (annualPrecip < 600) {
+          return 'Arid';
+        } else {
+          return 'Tropical';
+        }
+      }
+    };
+
     // --- 4. Ecology Promise ---
     const ecologyPromise = (async () => {
-      let ecology = { 
-        taxa: ['Acacia tortilis', 'Adansonia digitata', 'Moringa oleifera', 'Azadirachta indica'],
-        taxaDetails: [
-          { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: '' },
-          { name: 'Adansonia digitata', commonName: 'African Baobab', photoBase64: '' },
-          { name: 'Moringa oleifera', commonName: 'Moringa tree', photoBase64: '' },
-          { name: 'Azadirachta indica', commonName: 'Neem tree', photoBase64: '' }
-        ]
+      const clim = await climatePromise;
+      const zone = getClimateZone(lat, clim.temperature, clim.precipitation);
+
+      const zoneFallbacks = {
+        Arid: {
+          taxa: ['Acacia tortilis', 'Adansonia digitata', 'Moringa oleifera', 'Azadirachta indica'],
+          taxaDetails: [
+            { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: '' },
+            { name: 'Adansonia digitata', commonName: 'African Baobab', photoBase64: '' },
+            { name: 'Vulpes zerda', commonName: 'Fennec Fox', photoBase64: '' },
+            { name: 'Camelus dromedarius', commonName: 'Dromedary Camel', photoBase64: '' }
+          ]
+        },
+        Tropical: {
+          taxa: ['Mangifera indica', 'Persea americana', 'Panthera onca', 'Ramphastos toco'],
+          taxaDetails: [
+            { name: 'Mangifera indica', commonName: 'Mango Tree', photoBase64: '' },
+            { name: 'Persea americana', commonName: 'Avocado Tree', photoBase64: '' },
+            { name: 'Panthera onca', commonName: 'Jaguar', photoBase64: '' },
+            { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoBase64: '' }
+          ]
+        },
+        Temperate: {
+          taxa: ['Malus domestica', 'Symphytum officinale', 'Vulpes vulpes', 'Sciurus carolinensis'],
+          taxaDetails: [
+            { name: 'Malus domestica', commonName: 'Apple Tree', photoBase64: '' },
+            { name: 'Symphytum officinale', commonName: 'Comfrey', photoBase64: '' },
+            { name: 'Vulpes vulpes', commonName: 'Red Fox', photoBase64: '' },
+            { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoBase64: '' }
+          ]
+        },
+        Subtropical: {
+          taxa: ['Olea europaea', 'Ficus carica', 'Lynx pardinus', 'Genetta genetta'],
+          taxaDetails: [
+            { name: 'Olea europaea', commonName: 'Olive Tree', photoBase64: '' },
+            { name: 'Ficus carica', commonName: 'Common Fig', photoBase64: '' },
+            { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoBase64: '' },
+            { name: 'Genetta genetta', commonName: 'Common Genet', photoBase64: '' }
+          ]
+        }
       };
 
+      let ecology = zoneFallbacks[zone];
+
       try {
-        const res = await fetch(
-          `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=5&per_page=10`,
-          { next: { revalidate: 86400 } }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const results = data.results || [];
-          
-          const parsedTaxa = results
+        // Fetch Plants (Plantae) and Animals (Aves, Mammalia, etc.) in parallel
+        const [resPlants, resAnimals] = await Promise.all([
+          fetch(
+            `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=5&iconic_taxa=Plantae&per_page=5`,
+            { next: { revalidate: 86400 } }
+          ),
+          fetch(
+            `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=5&iconic_taxa=Aves,Mammalia,Reptilia,Amphibia,Insecta,Arachnida&per_page=5`,
+            { next: { revalidate: 86400 } }
+          )
+        ]);
+
+        let plantResults = [];
+        let animalResults = [];
+
+        if (resPlants.ok) {
+          const pData = await resPlants.json();
+          plantResults = pData.results || [];
+        }
+        if (resAnimals.ok) {
+          const aData = await resAnimals.json();
+          animalResults = aData.results || [];
+        }
+
+        const topPlants = plantResults.slice(0, 2);
+        const topAnimals = animalResults.slice(0, 2);
+        const mergedResults = [...topPlants, ...topAnimals];
+
+        if (mergedResults.length > 0) {
+          const parsedTaxa = mergedResults
             ?.map((r: any) => r.taxon?.preferred_common_name || r.taxon?.name)
             .filter((name: any) => typeof name === 'string' && name.trim().length > 0);
-          
-          if (Array.isArray(parsedTaxa) && parsedTaxa.length > 0) {
-            const details = [];
-            // Fetch default photos for the top 4 species in parallel
-            const photoPromises = results.slice(0, 4).map(async (r: any) => {
-              const name = r.taxon?.name || '';
-              const commonName = r.taxon?.preferred_common_name || name;
-              const photoUrl = r.taxon?.default_photo?.medium_url || r.taxon?.default_photo?.square_url || '';
-              const photoBase64 = photoUrl ? await fetchBase64Image(photoUrl) : '';
-              return { name, commonName, photoBase64 };
-            });
-            const resolvedDetails = await Promise.all(photoPromises);
-            
-            ecology = {
-              taxa: parsedTaxa,
-              taxaDetails: resolvedDetails
-            };
-          }
+
+          const photoPromises = mergedResults.map(async (r: any) => {
+            const name = r.taxon?.name || '';
+            const commonName = r.taxon?.preferred_common_name || name;
+            const photoUrl = r.taxon?.default_photo?.medium_url || r.taxon?.default_photo?.square_url || '';
+            const photoBase64 = photoUrl ? await fetchBase64Image(photoUrl) : '';
+            return { name, commonName, photoBase64 };
+          });
+          const resolvedDetails = await Promise.all(photoPromises);
+
+          ecology = {
+            taxa: parsedTaxa,
+            taxaDetails: resolvedDetails
+          };
         }
       } catch (err) {
         console.error('Server-side ecology fetch error:', err);
@@ -261,12 +331,41 @@ export async function GET(request: Request) {
           return '';
         };
 
+        const clim = await climatePromise;
+        const absLat = Math.abs(lat);
+        const annualPrecip = clim.precipitation * 365;
+        let climateZone = 'Arid';
+
+        if (clim.temperature >= 22 && annualPrecip >= 1200) {
+          climateZone = 'Tropical';
+        } else if (absLat > 35) {
+          climateZone = 'Temperate';
+        } else if (absLat > 22 && absLat <= 35) {
+          climateZone = 'Subtropical';
+        } else {
+          if (annualPrecip < 600) {
+            climateZone = 'Arid';
+          } else {
+            climateZone = 'Tropical';
+          }
+        }
+
+        let guildFileName = 'arid_acacia_guild.png';
+        let guildMime = 'image/png';
+        if (climateZone === 'Tropical') {
+          guildFileName = 'tropical_banana_guild.png';
+        } else if (climateZone === 'Temperate') {
+          guildFileName = 'temperate_apple_guild.png';
+        } else if (climateZone === 'Subtropical') {
+          guildFileName = 'mediterranean_olive_guild.png';
+        }
+
         maps = {
           satelliteMap: satB64,
           topoMap: topoB64,
           streetMap: streetB64,
           hillshadeMap: reliefB64,
-          bananaGuild: loadBase64Asset('nano_banana_guild.jpg'),
+          bananaGuild: loadBase64Asset(guildFileName, guildMime),
           waterHarvesting: loadBase64Asset('water_harvesting.jpg'),
           gravityDrip: loadBase64Asset('gravity_drip.jpg'),
           contourSwales: loadBase64Asset('contour_swales.jpg'),

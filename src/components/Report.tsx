@@ -140,7 +140,7 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
           setSoil(s);
           setEcology(eco);
           setMaps(m || null);
-          setGeneratedReport(generateReportContent(c, e, s, eco));
+          setGeneratedReport(generateReportContent(c, e, s, eco, location.lat, location.lng));
           setFetchedLocation(location);
           
           addLog("SYSTEM RESYNC: Core databases mapped. 14-Page PDC Portfolio initialized gracefully.");
@@ -174,10 +174,10 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
         } catch (err: any) {
           addLog(`SYSTEM RECOVERY: API fetch issue caught (${err.message}). Activating local offline stubs...`);
           
-          const fallbackClimate = { temperature: 24.5, precipitation: 1.2, windSpeed: 12.5, windDirection: 45, solarRadiation: 18.2 };
-          const fallbackElevation = { elevation: 45.0, slope: 1.2 };
-          const fallbackSoil = { ph: 6.8, organicCarbon: 4.5 };
-          const fallbackEcology = { 
+          const absLat = Math.abs(location.lat);
+          let zoneName = "Sahelian";
+          let fallbackClimate = { temperature: 24.5, precipitation: 1.2, windSpeed: 12.5, windDirection: 45, solarRadiation: 18.2 };
+          let fallbackEcology = { 
             taxa: ['Acacia tortilis', 'Adansonia digitata', 'Moringa oleifera', 'Azadirachta indica'],
             taxaDetails: [
               { name: 'Acacia tortilis', commonName: 'Umbrella Thorn Acacia', photoBase64: '' },
@@ -187,15 +187,56 @@ export default function Report({ location, boundaryCoords, userData }: ReportPro
             ]
           };
 
+          if (absLat > 35) {
+            zoneName = "Temperate";
+            fallbackClimate = { temperature: 14.2, precipitation: 2.1, windSpeed: 15.0, windDirection: 270, solarRadiation: 12.5 };
+            fallbackEcology = {
+              taxa: ['Malus domestica', 'Symphytum officinale', 'Vulpes vulpes', 'Sciurus carolinensis'],
+              taxaDetails: [
+                { name: 'Malus domestica', commonName: 'Apple Tree', photoBase64: '' },
+                { name: 'Symphytum officinale', commonName: 'Comfrey', photoBase64: '' },
+                { name: 'Vulpes vulpes', commonName: 'Red Fox', photoBase64: '' },
+                { name: 'Sciurus carolinensis', commonName: 'Eastern Gray Squirrel', photoBase64: '' }
+              ]
+            };
+          } else if (absLat > 22 && absLat <= 35) {
+            zoneName = "Mediterranean/Subtropical";
+            fallbackClimate = { temperature: 19.5, precipitation: 1.8, windSpeed: 10.5, windDirection: 225, solarRadiation: 16.8 };
+            fallbackEcology = {
+              taxa: ['Olea europaea', 'Ficus carica', 'Lynx pardinus', 'Genetta genetta'],
+              taxaDetails: [
+                { name: 'Olea europaea', commonName: 'Olive Tree', photoBase64: '' },
+                { name: 'Ficus carica', commonName: 'Common Fig', photoBase64: '' },
+                { name: 'Lynx pardinus', commonName: 'Iberian Lynx', photoBase64: '' },
+                { name: 'Genetta genetta', commonName: 'Common Genet', photoBase64: '' }
+              ]
+            };
+          } else if (absLat < 10) {
+            zoneName = "Tropical";
+            fallbackClimate = { temperature: 27.2, precipitation: 5.5, windSpeed: 8.0, windDirection: 90, solarRadiation: 22.0 };
+            fallbackEcology = {
+              taxa: ['Mangifera indica', 'Persea americana', 'Panthera onca', 'Ramphastos toco'],
+              taxaDetails: [
+                { name: 'Mangifera indica', commonName: 'Mango Tree', photoBase64: '' },
+                { name: 'Persea americana', commonName: 'Avocado Tree', photoBase64: '' },
+                { name: 'Panthera onca', commonName: 'Jaguar', photoBase64: '' },
+                { name: 'Ramphastos toco', commonName: 'Toco Toucan', photoBase64: '' }
+              ]
+            };
+          }
+
+          const fallbackElevation = { elevation: 45.0, slope: 1.2 };
+          const fallbackSoil = { ph: 6.8, organicCarbon: 4.5 };
+
           setClimate(fallbackClimate);
           setElevation(fallbackElevation);
           setSoil(fallbackSoil);
           setEcology(fallbackEcology);
           setMaps(null);
-          setGeneratedReport(generateReportContent(fallbackClimate, fallbackElevation, fallbackSoil, fallbackEcology));
+          setGeneratedReport(generateReportContent(fallbackClimate, fallbackElevation, fallbackSoil, fallbackEcology, location.lat, location.lng));
           setFetchedLocation(location);
           
-          addLog("SYSTEM SHIELD: Sahelian permaculture parameters locked. PDC Report successfully generated.");
+          addLog(`SYSTEM SHIELD: ${zoneName} permaculture parameters locked. PDC Report successfully generated.`);
           await new Promise(resolve => setTimeout(resolve, 800));
           setLoading(false);
         }

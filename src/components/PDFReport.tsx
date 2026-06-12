@@ -201,8 +201,8 @@ interface PDFReportProps {
 }
 
 const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology, userData, sunData, generatedReport, maps }: PDFReportProps) => {
-    const latStr = location ? `${safeFixed(location.lat, 5, "14.43204")}°N` : "14.43204°N";
-    const lngStr = location ? `${safeFixed(location.lng, 5, "-16.25148")}°W` : "16.25148°W";
+    const latStr = location ? `${Math.abs(location.lat).toFixed(5)}°${location.lat >= 0 ? 'N' : 'S'}` : "14.43204°N";
+    const lngStr = location ? `${Math.abs(location.lng).toFixed(5)}°${location.lng >= 0 ? 'E' : 'W'}` : "16.25148°W";
 
     // Calculate bounding box matching the geoproxy API bounds
     let minLat = location ? location.lat - 0.0035 : 14.43204 - 0.0035;
@@ -247,7 +247,76 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
     const areaStr = formatArea(calculatedArea);
 
     const latVal = location ? location.lat : 14.43204;
+    const lngVal = location ? location.lng : -16.25148;
     const isNorthern = latVal >= 0;
+
+    const getAridRegionName = (lLat: number, lLng: number): string => {
+        if (lLat >= 11 && lLat <= 20 && lLng >= -18 && lLng <= 25) {
+            return "Sahelian";
+        }
+        if (lLat >= 24 && lLat <= 40 && lLng >= -125 && lLng <= -100) {
+            return "Sonoran/Mojave Dryland";
+        }
+        if (lLat >= 30 && lLat <= 45 && lLng >= -10 && lLng <= 40) {
+            return "Mediterranean Arid";
+        }
+        if (lLat >= -38 && lLat <= -15 && lLng >= 110 && lLng <= 155) {
+            return "Australian Outback";
+        }
+        if (lLat >= 15 && lLat <= 35 && lLng >= 30 && lLng <= 60) {
+            return "Arabian Dryland";
+        }
+        return "Arid Dryland";
+    };
+
+    const getAridWindName = (lLat: number, lLng: number): string => {
+        if (lLat >= 11 && lLat <= 20 && lLng >= -18 && lLng <= 25) {
+            return "northeast Harmattan winds";
+        }
+        if (lLat >= 24 && lLat <= 40 && lLng >= -125 && lLng <= -100) {
+            return "hot Santa Ana and desert winds";
+        }
+        if (lLat >= -38 && lLat <= -15 && lLng >= 110 && lLng <= 155) {
+            return "dry interior winds";
+        }
+        if (lLat >= 15 && lLat <= 35 && lLng >= 30 && lLng <= 60) {
+            return "hot Shamal winds";
+        }
+        return "prevailing dryland winds";
+    };
+
+    const getAridPioneerTree = (lLat: number, lLng: number) => {
+        if (lLat >= 11 && lLat <= 20 && lLng >= -18 && lLng <= 25) {
+            return {
+                name: "Faidherbia albida",
+                common: "Apple Ring Acacia",
+                description: "drops its leaves during the wet season, allowing sunlight to reach understory crops when water is abundant. In the dry season, it grows a dense green canopy that shields the ground from scorching heat, significantly lowering soil temperatures and wind velocities while depositing nutrient-rich leaf litter directly onto the crop zones."
+            };
+        }
+        if (lLat >= 24 && lLat <= 40 && lLng >= -125 && lLng <= -100) {
+            return {
+                name: "Prosopis glandulosa",
+                common: "Honey Mesquite",
+                description: "fixes nitrogen, boasts deep taproots to stabilize soil moisture, and acts as a nurse canopy for young crops, shielding them from intense summer sun while building up humic matter."
+            };
+        }
+        if (lLat >= -38 && lLat <= -15 && lLng >= 110 && lLng <= 155) {
+            return {
+                name: "Acacia aneura",
+                common: "Mulga",
+                description: "directs scarce rainwater down its branches to its root zone, providing light shade and high-quality leaf litter to enrich the surrounding soil and shield understory crops."
+            };
+        }
+        return {
+            name: "Acacia tortilis",
+            common: "Umbrella Thorn",
+            description: "creates a wide umbrella canopy that filters intense sunlight, fixes nitrogen, and drops organic pods to build humus, shielding the ground from scorching heat."
+        };
+    };
+
+    const aridRegion = getAridRegionName(latVal, lngVal);
+    const aridWind = getAridWindName(latVal, lngVal);
+    const aridPioneer = getAridPioneerTree(latVal, lngVal);
 
     const precipVal = climate ? climate.precipitation : 1.2;
     const tempVal = climate ? climate.temperature : 24.5;
@@ -272,29 +341,48 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
 
     const designConfig = {
         Arid: {
-            zoneName: "Arid/Sahelian Dryland System",
-            plantGuildTitle: "Sahelian Syntropic Agroforestry Guild Design",
-            plantGuildIntro: "Designed to combat desertification and wind erosion in arid zones by pairing drought-resilient overstory species with fast-growing nitrogen fixers.",
-            plantGuildDescription: "The guild centers on the African Baobab and Umbrella Thorn Acacia, which create windbreaks and light shade filters. Moringa and Pigeon Pea produce continuous chop-and-drop biomass to rebuild soil organic matter, while marigolds protect the root zones.",
+            zoneName: `${aridRegion} Dryland System`,
+            plantGuildTitle: `${aridRegion} Syntropic Agroforestry Guild Design`,
+            plantGuildIntro: `Designed to combat desertification and wind erosion in ${aridRegion.toLowerCase()} zones by pairing drought-resilient overstory species with fast-growing nitrogen fixers.`,
+            plantGuildDescription: `The guild centers on the ${aridRegion === 'Sahelian' ? 'African Baobab' : 'Desert Ironwood'} and ${aridRegion === 'Sahelian' ? 'Umbrella Thorn Acacia' : 'Honey Mesquite'}, which create windbreaks and light shade filters. Moringa and Pigeon Pea produce continuous chop-and-drop biomass to rebuild soil organic matter, while marigolds protect the root zones.`,
             guildSpecies: [
-                { layer: "1. Overstory Canopy", species: "Adansonia digitata (Baobab)", role: "Deep taproots, shade, windbreak" },
-                { layer: "2. Understory Nitrogen", species: "Acacia tortilis (Umbrella Thorn)", role: "Nitrogen fixation, sand stabilization" },
+                { layer: "1. Overstory Canopy", species: aridRegion === 'Sahelian' ? "Adansonia digitata (Baobab)" : "Olneya tesota (Desert Ironwood)", role: "Deep taproots, shade, windbreak" },
+                { layer: "2. Understory Nitrogen", species: aridPioneer.name + ` (${aridPioneer.common})`, role: "Nitrogen fixation, soil stabilization" },
                 { layer: "3. Chop-and-Drop Biomass", species: "Moringa oleifera (Moringa)", role: "High-protein biomass, mineral accumulation" },
                 { layer: "4. Herbaceous Companion", species: "Cajanus cajan (Pigeon Pea)", role: "Root aeration, edible pea pods" }
             ],
             guildLowerHeading: "Musa 'Truly Tiny' (Nano Banana) Arid Guild Layout",
             guildLowerText: "The design details our dwarf banana guild adapted for dry regions. The central banana sits in a micro-catchment basin, insulated by sweet potato live-mulch to protect root moisture, and supported by comfrey and pigeon pea.",
-            waterTitle: "Sahelian Rainwater Harvesting & Cistern Loop",
-            waterIntro: "Rainwater calculations are calibrated for the high-intensity seasonal storms of arid regions. Gutters channel runoff through a first-flush diverter to a 20,000L cistern.",
+            waterTitle: `${aridRegion} Rainwater Harvesting & Cistern Loop`,
+            waterIntro: `Rainwater calculations are calibrated for the seasonal storm patterns of ${aridRegion.toLowerCase()} regions. Gutters channel runoff through a first-flush diverter to a 20,000L cistern.`,
             waterSpecs: "FIRST-FLUSH DIVERTER + 20,000L CISTERN STORAGE",
-            dripTitle: "Arid Gravity-Fed Drip & Buried Ollas",
+            dripTitle: `${aridRegion} Gravity-Fed Drip & Buried Ollas`,
             dripIntro: "Distributes stored water via a low-pressure drip line coupled with porous clay Ollas. Ollas are buried next to trees, seeping water directly to root zones with zero evaporation.",
-            dripSpecs: "GRAVITY-FED DRIP + BURIED CLAY OLLAS",
+            dripSpecs: "GRAVITY-FED Drip + BURIED CLAY OLLAS",
             swalesTitle: "Contour Swales & Micro-Catchment Trenches",
             swalesIntro: "Level swales capture high-volume flash runoff. Swale beds are backfilled with organic matter to act as underground sponges, keeping trees hydrated through dry seasons.",
             swalesSpecs: "INFILTRATION CONTOUR SWALES + STORAGE POND",
-            zoningIntro: "Concentric zoning in arid areas centers around Zone 0 to provide windbreaks and thermal shading. Zone 1 kitchen gardens are placed on the eastern side to capture morning sun while avoiding harsh afternoon rays.",
-            conceptIntro: "The functional bubble concept connects Zone 0 greywater to Zone 2 fruit orchards, and routes compost manure to Zone 1 beds, closing nutrient loops under high evaporation stress."
+            zoningIntro: `Concentric zoning in ${aridRegion.toLowerCase()} areas centers around Zone 0 to provide windbreaks and thermal shading. Zone 1 kitchen gardens are placed on the eastern side to capture morning sun while avoiding harsh afternoon rays.`,
+            conceptIntro: `The functional bubble concept connects Zone 0 greywater to Zone 2 fruit orchards, and routes compost manure to Zone 1 beds, closing nutrient loops under high evaporation stress.`,
+            soilStrategyTitle: `${aridRegion} Soil Strategy`,
+            soilStrategyIntro: `Rebuilding degraded soils in dry regions requires active biological remediation. Our primary strategy centers on the application of biochar (pyrolyzed crop waste), which is inoculated with nutrient-rich compost teas and animal manure to create highly porous carbon sinks that house beneficial soil microorganisms.`,
+            soilCrops: "arid-adapted crops",
+            soilPhase2GreenCover: "Pigeon pea and cowpea understory guilds",
+            soilTableTitle: `${aridRegion} Soil Suitability & Recommendations`,
+            soilDescriptionText: "Low organic carbon reduces water-holding capacity and mineral retention in the sandy soils of the region. Soil strategies must focus immediately on rebuilding humic complexes, stabilizing soil structure, and inoculating the rhizosphere with mycorrhizal fungi to prevent leaching of vital minerals during the brief rainy season.",
+            soilPhRecommendation: `Ideal. Fits drought-hardy dryland species like ${aridRegion === 'Sahelian' ? 'Acacia and Moringa' : 'Mesquite and Desert Ironwood'}.`,
+            soilPhase1BiocharInput: `${aridRegion === 'Sahelian' ? 'Neem' : 'Mesquite'} wood biochar activated with manure tea`,
+            soilStrategyParagraph: `We combine biochar application with pioneer nitrogen-fixing cover crops like Pigeon Pea (Cajanus cajan) and Cowpea (Vigna unguiculata). These deep-rooting leguminous species break up compacted soil layers, deposit organic matter, and fix atmospheric nitrogen in the root zone, creating a fertile soil foundation for subsequent crop guilds.`,
+            canopyIntro: `Under the intense solar radiation of drylands, canopy shade engineering is vital to lower ambient temperatures and reduce crop transpiration. We utilize the unique ecological characteristics of *${aridPioneer.name}* (${aridPioneer.common}), a native nitrogen-fixing leguminous tree.`,
+            canopyDescription: `*${aridPioneer.name}* ${aridPioneer.description}`,
+            canopyEmergentSpecies: aridRegion === 'Sahelian' ? "Adansonia digitata (African Baobab)" : "Olneya tesota (Desert Ironwood)",
+            canopyEmergentRole: "Deep moisture extraction, wind dispersal barrier",
+            canopyUnderstorySpecies: "Moringa oleifera (Moringa)",
+            canopyUnderstoryRole: "Rapid leaf chop-and-drop mulch shade cooling",
+            faunaTitle: `${aridRegion} Wildlife Observations`,
+            faunaIntro: "Local fauna observations provide critical insight into the surrounding trophic levels, pest-predator relationships, and biological nutrient cycles. The dynamic iNaturalist records catalog bird, mammal, and insect species occurring within a 5-kilometer radius of the design site.",
+            scaleMapDetails: `standard ${aridRegion.toLowerCase()} homestead boundary`,
+            climateIntro: `The regional climate falls squarely within the ${aridRegion.toLowerCase()} zone, presenting seasonal water stresses. Meteorological telemetry indicates a seasonal precipitation curve, with dry periods dominated by the ${aridWind}.`
         },
         Tropical: {
             zoneName: "Humid Tropical Forest System",
@@ -319,7 +407,26 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             swalesIntro: "Swales are designed with a slight grade (0.5%) to slowly drain excess water into natural waterways, preventing waterlogging and anaerobic root conditions.",
             swalesSpecs: "DRAINAGE CONTOURS + VETIVER SOIL BINDERS",
             zoningIntro: "Concentric zoning in humid climates prioritizes ventilation and air circulation. Zone 1 gardens are raised to prevent root rot, while dense Zone 4 forestry buffers protect against tropical storms.",
-            conceptIntro: "The functional bubble concept connects roof runoff to aquaculture ponds and directs chicken coop wastes to compost yards, mitigating nutrient leaching from heavy rains."
+            conceptIntro: "The functional concept diagram illustrates the nutrient, waste, and energy flows across the property. Connections define how elements support each other: kitchen waste feeds Zone 1 compost piles, compost enriches Zone 1 raised beds, and graywater from Zone 0 houses hydrates Zone 2 agroforestry fruit guilds.",
+            soilStrategyTitle: "Tropical Soil Strategy",
+            soilStrategyIntro: "Remediating tropical soils focuses on preventing nutrient leaching and managing acidic pH. Our primary strategy centers on heavy mulching with fast-decomposing organic matter, green manures, and moderate rock dust applications to replenish calcium and trace minerals.",
+            soilCrops: "humid tropical crops",
+            soilPhase2GreenCover: "Mucuna, velvet bean, and sweet potato groundcover",
+            soilTableTitle: "Tropical Soil Suitability & Recommendations",
+            soilDescriptionText: "High rainfall leads to rapid nutrient leaching and organic matter decomposition in tropical soils. Soil strategies must focus on heavy sheet mulching, cover cropping, and applying rock dust to stabilize soil pH and prevent nutrient runoff.",
+            soilPhRecommendation: "Suitable. Fits tropical cultivars like Mango, Banana, and Ginger.",
+            soilPhase1BiocharInput: "Bamboo or agricultural waste biochar activated with liquid compost",
+            soilStrategyParagraph: "We combine biochar application with vigorous tropical cover crops like Velvet Bean (Mucuna pruriens) and Sweet Potato groundcover. These fast-growing species protect the soil from heavy monsoon rain erosion, outcompete weeds, and cycle nutrients rapidly.",
+            canopyIntro: "In the hot, high-humidity tropics, vertical canopy layers are engineered to intercept torrential rain and filter solar radiation. We deploy emergent fast-growing nitrogen-fixing legumes like *Albizia lebbeck* to protect lower productive tiers.",
+            canopyDescription: "The emergent layer breaks the physical impact of heavy downpours, preventing soil compaction. Its high leaf volume provides continuous chop-and-drop mulch, while the deep roots recycle minerals from deep subsoil layers back into the system.",
+            canopyEmergentSpecies: "Albizia lebbeck (Woman's Tongue)",
+            canopyEmergentRole: "Heavy wind barrier, rapid nitrogen foliage cycle",
+            canopyUnderstorySpecies: "Moringa oleifera (Moringa)",
+            canopyUnderstoryRole: "Mulch-producer, mineral-accumulator understory",
+            faunaTitle: "Humid Tropical Wildlife Observations",
+            faunaIntro: "Local fauna observations in tropical zones indicate extreme biodiversity. iNaturalist records map active insect vectors, bird species, and canopy mammals occurring within a 5-kilometer radius of the property.",
+            scaleMapDetails: "standard Tropical forest boundary",
+            climateIntro: "The regional climate is humid-tropical, characterized by high annual precipitation and warm year-round temperatures. The precipitation curves show consistent moisture with intense seasonal monsoons and high relative humidity."
         },
         Temperate: {
             zoneName: "Temperate Deciduous Forest System",
@@ -344,7 +451,26 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             swalesIntro: "Level swales are placed on keyline contours to spread water from valley pockets out to dry ridges, maximizing soil hydration across the entire slope.",
             swalesSpecs: "KEYLINE SWALES + COLD-SEASON BYPASS PONDS",
             zoningIntro: "Concentric zoning in temperate regions is shaped by the solar arc. Zone 1 gardens are placed on the south-facing slope of the house, while Zone 4 conifers form a northern windbreak.",
-            conceptIntro: "The functional bubble concept routes household heating flue exhaust to greenhouses, and cycles deciduous leaf drops into compost layers to feed Zone 1 beds."
+            conceptIntro: "The functional bubble concept connects Zone 0 greywater to Zone 2 fruit orchards, and routes compost manure to Zone 1 beds, closing nutrient loops under high evaporation stress.",
+            soilStrategyTitle: "Temperate Soil Strategy",
+            soilStrategyIntro: "Building temperate soils centers on deep organic sheet mulching and protecting winter biology. We apply local woodchips and leaf mold to encourage mycorrhizal fungi, inoculation with native compost, and plant dense cover crops to hold nutrients.",
+            soilCrops: "temperate crops",
+            soilPhase2GreenCover: "White clover, hairy vetch, and winter rye",
+            soilTableTitle: "Temperate Soil Suitability & Recommendations",
+            soilDescriptionText: "Temperate soils require protection against winter freezing and compaction. Soil strategies must focus on building a deep humic layer, applying composted leaf mold, and planting deep-rooting cover crops to aerate clay-heavy profiles.",
+            soilPhRecommendation: "Favorable. Fits temperate orchard crops like Apple, Currant, and Clover.",
+            soilPhase1BiocharInput: "Hardwood forest biochar activated with worm castings tea",
+            soilStrategyParagraph: "We combine biochar application with cold-hardy cover crops like White Clover (Trifolium repens), Hairy Vetch (Vicia villosa), and Winter Rye. These species maintain soil cover over winter, fix nitrogen, and build organic matter as they decompose in spring.",
+            canopyIntro: "Temperate canopy design focuses on wind protection and solar access. We utilize deciduous overstory trees like *Quercus* or *Malus* to block cold winds in winter, while allowing early spring sun to reach the orchard floor before leaf-out.",
+            canopyDescription: "The deciduous canopy provides solar-permeable shade during winter and spring, while dropping massive quantities of organic matter in autumn. This seasonal cycle builds deep forest humus and feeds the soil biology.",
+            canopyEmergentSpecies: "Quercus robur (English Oak)",
+            canopyEmergentRole: "Deep microclimate windbreak, massive leaf drop humus",
+            canopyUnderstorySpecies: "Ribes rubrum (Red Currant)",
+            canopyUnderstoryRole: "Shade-tolerant sub-canopy berry accumulator",
+            faunaTitle: "Temperate Forest Wildlife Observations",
+            faunaIntro: "Local fauna observations in temperate zones reflect distinct seasonal migrations and hibernation cycles. iNaturalist records map woodland mammals, migratory birds, and insects within a 5-kilometer radius.",
+            scaleMapDetails: "standard Temperate forest boundary",
+            climateIntro: "The regional climate is temperate, characterized by four distinct seasons, moderate year-round precipitation, and freezing winter temperatures. The design buffers the site against cold winds and optimizes winter solar gain."
         },
         Subtropical: {
             zoneName: "Subtropical/Mediterranean Olive & Fig System",
@@ -369,7 +495,26 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             swalesIntro: "On sloped Mediterranean land, swales are reinforced with stone walls. This creates stable terraces that slow down winter torrents and prevent mudslides.",
             swalesSpecs: "STONE-REINFORCED SWALES + COLD-WATER PONDS",
             zoningIntro: "Concentric zoning focuses on fire safety and water efficiency. Zone 1 gardens are placed close to the house, while Zone 3 olives and figs act as a fire-resistant shelterbelt.",
-            conceptIntro: "The functional bubble concept connects kitchen greywater to sub-surface olive roots, and routes dry grass clippings to sheep paddocks in Zone 3."
+            conceptIntro: "The functional bubble concept connects kitchen greywater to sub-surface olive roots, and routes dry grass clippings to sheep paddocks in Zone 3.",
+            soilStrategyTitle: "Mediterranean Soil Strategy",
+            soilStrategyIntro: "Remediating Mediterranean soils focuses on moisture retention and building organic carbon. We apply composted woody mulch, inoculate with cover crop roots, and use biological biochar arrays to increase water retention during dry summers.",
+            soilCrops: "drought-hardy Mediterranean crops",
+            soilPhase2GreenCover: "Spanish broom, vetch, and subterranean clover",
+            soilTableTitle: "Mediterranean Soil Suitability & Recommendations",
+            soilDescriptionText: "Mediterranean soils suffer from high evaporation and organic matter depletion during hot, dry summers. Soil strategies must focus on clay-humus complex stabilization, heavy woody mulching, and planting drought-hardy cover crops to protect soil biology.",
+            soilPhRecommendation: "Excellent. Fits Mediterranean species like Olive, Fig, and Rosemary.",
+            soilPhase1BiocharInput: "Olive wood pruning biochar activated with compost extract",
+            soilStrategyParagraph: "We combine biochar application with drought-tolerant cover crops like Spanish Broom (Genista monspessulana), Vetch, and Subterranean Clover. These species establish quickly, build soil nitrogen, and form a resilient green mulch layer before the hot summer.",
+            canopyIntro: "Subtropical canopy shade engineering mitigates dry-summer heat and shields soil moisture. We utilize evergreen olive (*Olea europaea*) and deciduous fig (*Ficus carica*) to create a balanced dappled shade corridor.",
+            canopyDescription: "The canopy shields the understory from drying winds. The deep root structure extracts moisture from subsoil layers, maintaining cooler local temperatures and buffering the site against microclimatic extremes.",
+            canopyEmergentSpecies: "Olea europaea (Olive Tree)",
+            canopyEmergentRole: "Evergreen microclimatic windshield, deep taproots",
+            canopyUnderstorySpecies: "Ficus carica (Common Fig)",
+            canopyUnderstoryRole: "Broad-leaf soil shading, deciduous leaf mulcher",
+            faunaTitle: "Mediterranean Wildlife Observations",
+            faunaIntro: "Local fauna observations in Mediterranean/Subtropical zones show adaptation to hot summers and dry grasslands. iNaturalist records capture native birds, reptiles, and insects occurring within a 5-kilometer radius.",
+            scaleMapDetails: "standard Mediterranean forest boundary",
+            climateIntro: "The regional climate is Mediterranean/Subtropical, characterized by hot, dry summers and mild, wet winters. Water management is designed to store heavy winter rain to support production during the dry summer."
         }
     };
 
@@ -557,7 +702,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             <Page size="A4" style={styles.coverPage}>
                 <View>
                     <Text style={styles.coverSubtitle}>Permaculture Design Course (PDC) Portfolio</Text>
-                    <Text style={styles.coverTitle}>{(userData?.projectName || "HEAVEN'S GATE: GOSSAS, SENEGAL").toUpperCase()}</Text>
+                    <Text style={styles.coverTitle}>{(userData?.projectName || "HEAVEN'S GATE").toUpperCase()}</Text>
                     <Text style={{ fontSize: 14, color: '#d8f3dc', marginBottom: 30, fontWeight: 'bold' }}>
                         A Professional 21-Section Site Design & Hydrological Plan
                     </Text>
@@ -565,7 +710,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                     <View style={styles.coverMeta}>
                         <Text>CLIENT / STEWARD: {userData.clientName || "Ahmed Khalil"}</Text>
                         <Text>GEOGRAPHIC COORDINATES: {latStr}, {lngStr}</Text>
-                        <Text>ECOLOGICAL CLASSIFICATION: Dryland / Sahelian Syntropic Buffer Zone</Text>
+                        <Text>ECOLOGICAL CLASSIFICATION: {activeDesign.zoneName}</Text>
                         <Text>BUDGET FRAMEWORK: {userData.budget ? `$${userData.budget}` : "Phase-decoupled CAPEX bootstrap"}</Text>
                         <Text>DATE GENERATED: {new Date().toLocaleDateString()}</Text>
                     </View>
@@ -577,7 +722,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="01 | Site Credentials" />
                 <Text style={styles.h1}>Executive Summary & Credentials</Text>
                 <Text style={styles.bodyText}>
-                    This comprehensive permaculture master plan presents a detailed, site-specific regenerative design framework for the property at {userData.projectName || "Heaven's Gate: Gossas, Senegal"}. Grounded in the classic Yeomans Scale of Permanence and the structured OBREDIM (Observation, Boundaries, Resources, Evaluation, Design, Implementation, Maintenance) methodology, this analysis integrates high-resolution remote GIS telemetry, elevation modeling, and multi-spectral satellite imagery. The goal is to design a resilient, low-input agroecological system that mitigates Sahelian climate extremes while restoring biological diversity and economic viability.
+                    This comprehensive permaculture master plan presents a detailed, site-specific regenerative design framework for the property at {userData.projectName || "Heaven's Gate"}. Grounded in the classic Yeomans Scale of Permanence and the structured OBREDIM (Observation, Boundaries, Resources, Evaluation, Design, Implementation, Maintenance) methodology, this analysis integrates high-resolution remote GIS telemetry, elevation modeling, and multi-spectral satellite imagery. The goal is to design a resilient, low-input agroecological system that mitigates local climate extremes while restoring biological diversity and economic viability.
                 </Text>
                 <Text style={styles.bodyText}>
                     By leveraging regional iNaturalist datasets and global soil registries, we establish an ecological baseline that forms the foundation of our site plan. This document details water capture dynamics, microclimatic manipulation, wind protection vectors, and intensive syntropic food forest designs, providing a clear roadmap for long-term regenerative stewardship.
@@ -642,7 +787,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="03 | Base Map" />
                 <Text style={styles.h1}>Scale Base Map & Site Boundaries</Text>
                 <Text style={styles.bodyText}>
-                    The scale base map represents the core geographical blueprint of the landscape plan. The property consists of a standard Sahelian homestead boundary (measuring 25 meters by 100 meters, elongated north-to-south). Zone 0 is strategically centered to minimize walking distances to intensive production sectors.
+                    The scale base map represents the core geographical blueprint of the landscape plan. The property consists of a {activeDesign.scaleMapDetails}. Zone 0 is strategically centered to minimize walking distances to intensive production sectors.
                 </Text>
                 <Text style={styles.bodyText}>
                     By mapping these structures on top of the street GIS networks, we identify secondary access roads, pipeline entry lines, and property fences. This scale layout allows precise planning for edge effects, shelterbelt locations, and passive gravity water runs from the domestic roof capture structures.
@@ -683,7 +828,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="04 | Climate & Rain" />
                 <Text style={styles.h1}>Climatic Profile & Precipitation Metrics</Text>
                 <Text style={styles.bodyText}>
-                    The regional climate falls squarely within the dry-arid Sahelo-Sudanian transition zone, presenting severe seasonal water stresses. Meteorological telemetry indicates a highly seasonal precipitation curve, with a brief, high-intensity monsoon season (typically July to October) followed by an extended, desiccating dry season (November to June) dominated by the northeast Harmattan winds.
+                    {activeDesign.climateIntro}
                 </Text>
                 <Text style={styles.bodyText}>
                     Design mitigation focuses on maximizing water infiltration during heavy downpours using deep contour swales, combined with extensive chop-and-drop mulching to block soil water evaporation. The shelterbelt is positioned to intercept dry winds, reducing crop transpiration and creating a cooler, protected microclimate in the crop production areas.
@@ -758,7 +903,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="05b | Satellite Map" />
                 <Text style={styles.h1}>High-Resolution Satellite Orthophoto</Text>
                 <Text style={styles.bodyText}>
-                    The high-resolution satellite orthophoto acts as a visual verification tool, confirming boundary details, tree canopies, and soil variations. In this Sahelian zone, the satellite layer highlights bare soils subject to wind erosion, allowing us to map bare zones that require cover cropping.
+                    The high-resolution satellite orthophoto acts as a visual verification tool, confirming boundary details, tree canopies, and soil variations. In this climate zone, the satellite layer highlights bare soils subject to erosion, allowing us to map bare zones that require cover cropping.
                 </Text>
                 <Text style={styles.bodyText}>
                     Overlaid green vectors show the primary permaculture zone boundaries, highlighting where intensive agroforestry systems transition into Zone 3 cropping and Zone 5 wild buffer zones. This spatial validation ensures that our digital elevation designs line up perfectly with the actual physical landscape features.
@@ -912,27 +1057,49 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Text x={hX + 68} y={hY + 2} style={{ fontSize: 5, fill: '#15803d', fontFamily: 'Helvetica-Bold' }}>ZONE 3</Text>
                         </Svg>
                     </View>
-                    {maps?.concentricZoning && (
-                        <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', position: 'relative' }}>
-                            <Image src={maps.concentricZoning} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                            {/* Blueprint background */}
+                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                            {/* Grid lines */}
+                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
                             
-                            {/* Blue print overlay */}
-                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', paddingHorizontal: 4, paddingVertical: 3, borderTopWidth: 0.8, borderTopColor: '#0284c7' }}>
-                                <Text style={{ fontSize: 5, color: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>CONCENTRIC ZONING SCHEMATIC</Text>
-                                <Text style={{ fontSize: 4.2, color: '#e2e8f0', marginTop: 1 }}>{`Site: ${userData.projectName || "Unnamed"} | Zone: ${activeDesign.zoneName}`}</Text>
-                                <Text style={{ fontSize: 3.8, color: '#94a3b8' }}>{`Area: ${areaStr} | Lat: ${latStr}`}</Text>
-                            </View>
+                            {/* Center coordinates */}
+                            <Circle cx="100" cy="80" r="60" fill="none" stroke="#334155" strokeWidth="0.5" />
+                            <Circle cx="100" cy="80" r="45" fill="none" stroke="#334155" strokeWidth="0.5" strokeDasharray="2,2" />
+                            <Circle cx="100" cy="80" r="30" fill="none" stroke="#334155" strokeWidth="0.5" />
+                            <Circle cx="100" cy="80" r="15" fill="none" stroke="#334155" strokeWidth="0.5" strokeDasharray="2,2" />
                             
-                            {/* Mini Site Key Map */}
-                            <View style={{ position: 'absolute', top: 4, right: 4, width: 34, height: 34, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 3, borderWidth: 0.5, borderColor: '#cbd5e1', padding: 1.5, alignItems: 'center', justifyContent: 'center' }}>
-                                <Svg width="22" height="22" viewBox="0 0 50 50">
-                                    <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="2" />
-                                    <Circle cx="25" cy="25" r="3" fill="#ef4444" />
-                                </Svg>
-                                <Text style={{ fontSize: 3, color: '#475569', marginTop: 1, fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
-                            </View>
-                        </View>
-                    )}
+                            {/* Zone 0 House */}
+                            <Rect x="93" y="75" width="14" height="10" fill="#38bdf8" />
+                            <Polygon points="90,75 100,68 110,75" fill="#0284c7" />
+                            
+                            {/* Labels */}
+                            <Text x="100" y="90" style={{ fontSize: 4.5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 0: HOUSE</Text>
+                            
+                            {/* Zone 1 indicator */}
+                            <Path d="M 100 80 L 120 65" stroke="#38bdf8" strokeWidth="0.8" />
+                            <Circle cx="120" cy="65" r="1.5" fill="#38bdf8" />
+                            <Text x="123" y="66" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 1: KITCHEN GARDEN</Text>
+                            <Text x="123" y="71" style={{ fontSize: 3.5, fill: '#38bdf8' }}>{`(${activeDesign.soilCrops})`}</Text>
+                            
+                            {/* Zone 2 indicator */}
+                            <Path d="M 100 80 L 70 50" stroke="#10b981" strokeWidth="0.8" />
+                            <Circle cx="70" cy="50" r="1.5" fill="#10b981" />
+                            <Text x="15" y="47" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 2: SEMI-INTENSIVE</Text>
+                            <Text x="15" y="52" style={{ fontSize: 3.5, fill: '#10b981' }}>{`(${activeDesign.plantGuildTitle.split(' ')[0]} Guild)`}</Text>
+                            
+                            {/* Zone 3 indicator */}
+                            <Path d="M 100 80 L 140 115" stroke="#fbbf24" strokeWidth="0.8" />
+                            <Circle cx="140" cy="115" r="1.5" fill="#fbbf24" />
+                            <Text x="143" y="117" style={{ fontSize: 4, fill: '#94a3b8' }}>ZONE 3: AGROFORESTRY</Text>
+                            <Text x="143" y="122" style={{ fontSize: 3.5, fill: '#fbbf24' }}>{`(${activeDesign.canopyEmergentSpecies.split(' (')[0]})`}</Text>
+                            
+                            {/* Dynamic Title Overlay */}
+                            <Text x="8" y="145" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>CONCENTRIC ZONING SCHEMATIC</Text>
+                            <Text x="8" y="152" style={{ fontSize: 4, fill: '#e2e8f0' }}>{`Site: ${userData.projectName || "Unnamed"} | Lat: ${latStr}`}</Text>
+                        </Svg>
+                    </View>
                 </View>
                 <Text style={styles.caption}>Figure 5: Concentric zoning plan detailing system access layers.</Text>
                 <Footer pageNum="10" />
@@ -973,21 +1140,21 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="08 | Soil Profile" />
                 <Text style={styles.h1}>Soil Characteristics & Chemistry</Text>
                 <Text style={styles.bodyText}>
-                    Baseline soil telemetry identifies the chemical and biological starting conditions of the property. The soil has a neutral pH of {soil ? `${safeFixed(soil.ph, 1, "6.1")} pH` : "6.1 pH"}, which is highly favorable for nutrient uptake and accommodates a wide variety of Sahelian crops. However, the Soil Organic Carbon (SOC) levels are critically low at {soil ? `${safeFixed(soil.organicCarbon, 1, "10.5")} g/kg` : "10.5 g/kg"}.
+                    Baseline soil telemetry identifies the chemical and biological starting conditions of the property. The soil has a neutral pH of {soil ? `${safeFixed(soil.ph, 1, "6.1")} pH` : "6.1 pH"}, which is highly favorable for nutrient uptake and accommodates a wide variety of {activeDesign.soilCrops}. However, the Soil Organic Carbon (SOC) levels are critically low at {soil ? `${safeFixed(soil.organicCarbon, 1, "10.5")} g/kg` : "10.5 g/kg"}.
                 </Text>
                 <Text style={styles.bodyText}>
-                    Low organic carbon reduces water-holding capacity and mineral retention in the sandy "Dior" soils of the region. Soil strategies must focus immediately on rebuilding humic complexes, stabilizing soil structure, and inoculating the rhizosphere with mycorrhizal fungi to prevent leaching of vital minerals during the brief rainy season.
+                    {activeDesign.soilDescriptionText}
                 </Text>
                 <View style={styles.table}>
                   <View style={styles.tableHeaderRow}>
                     <Text style={styles.tableCellHeader}>Soil Layer (0-5cm)</Text>
                     <Text style={styles.tableCellHeader}>Measured Metric Value</Text>
-                    <Text style={styles.tableCellHeader}>Sahelian Soil Strategy</Text>
+                    <Text style={styles.tableCellHeader}>{activeDesign.soilTableTitle}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>pH (H2O)</Text>
                     <Text style={styles.tableCell}>{soil ? `${safeFixed(soil.ph, 1, "6.1")} pH` : "6.1 pH"}</Text>
-                    <Text style={styles.tableCell}>Ideal. Fits Moringa, Azadirachta, and Acacia Senegalia.</Text>
+                    <Text style={styles.tableCell}>{activeDesign.soilPhRecommendation}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Soil Organic Carbon</Text>
@@ -1003,10 +1170,10 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="09 | Soil Amendment" />
                 <Text style={styles.h1}>Biological Soil Building Strategies</Text>
                 <Text style={styles.bodyText}>
-                    Rebuilding degraded Sahelian soils requires active biological remediation. Our primary strategy centers on the application of biochar (pyrolyzed crop waste), which is inoculated with nutrient-rich compost teas and animal manure to create highly porous carbon sinks that house beneficial soil microorganisms.
+                    {activeDesign.soilStrategyIntro}
                 </Text>
                 <Text style={styles.bodyText}>
-                    We combine biochar application with pioneer nitrogen-fixing cover crops like *Cajanus cajan* (Pigeon Pea) and *Vigna unguiculata* (Cowpea). These deep-rooting leguminous species break up compacted soil layers, deposit organic matter, and fix atmospheric nitrogen in the root zone, creating a fertile soil foundation for subsequent crop guilds.
+                    {activeDesign.soilStrategyParagraph}
                 </Text>
                 <View style={styles.table}>
                   <View style={styles.tableHeaderRow}>
@@ -1016,12 +1183,12 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Phase 1: Biochar</Text>
-                    <Text style={styles.tableCell}>Neem wood biochar activated with manure tea</Text>
+                    <Text style={styles.tableCell}>{activeDesign.soilPhase1BiocharInput}</Text>
                     <Text style={styles.tableCell}>Microbial colonization, cation exchange capacity boost</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Phase 2: Green Cover</Text>
-                    <Text style={styles.tableCell}>Pigeon pea and cowpea understory guilds</Text>
+                    <Text style={styles.tableCell}>{activeDesign.soilPhase2GreenCover}</Text>
                     <Text style={styles.tableCell}>Atmospheric nitrogen fixation, biological root pathways</Text>
                   </View>
                 </View>
@@ -1033,10 +1200,10 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="10 | Microclimates" />
                 <Text style={styles.h1}>Canopy Microclimate & Shade Engineering</Text>
                 <Text style={styles.bodyText}>
-                    Under the intense solar radiation of the Sahel, canopy shade engineering is vital to lower ambient temperatures and reduce crop transpiration. We utilize the unique ecological characteristics of *Faidherbia albida*, a native nitrogen-fixing leguminous tree that exhibits reverse leaf phenology.
+                    {activeDesign.canopyIntro}
                 </Text>
                 <Text style={styles.bodyText}>
-                    *Faidherbia albida* drops its leaves during the wet season, allowing sunlight to reach understory crops when water is abundant. In the dry season, it grows a dense green canopy that shields the ground from scorching heat, significantly lowering soil temperatures and wind velocities while depositing nutrient-rich leaf litter directly onto the crop zones.
+                    {activeDesign.canopyDescription}
                 </Text>
                 <View style={styles.table}>
                   <View style={styles.tableHeaderRow}>
@@ -1046,13 +1213,13 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Emergent Canopy (12m+)</Text>
-                    <Text style={styles.tableCell}>Adansonia digitata (African Baobab)</Text>
-                    <Text style={styles.tableCell}>Deep moisture extraction, wind dispersal barrier</Text>
+                    <Text style={styles.tableCell}>{activeDesign.canopyEmergentSpecies}</Text>
+                    <Text style={styles.tableCell}>{activeDesign.canopyEmergentRole}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Support Understory (4-6m)</Text>
-                    <Text style={styles.tableCell}>Moringa oleifera (Moringa)</Text>
-                    <Text style={styles.tableCell}>Rapid leaf chop-and-drop mulch shade cooling</Text>
+                    <Text style={styles.tableCell}>{activeDesign.canopyUnderstorySpecies}</Text>
+                    <Text style={styles.tableCell}>{activeDesign.canopyUnderstoryRole}</Text>
                   </View>
                 </View>
                 <Footer pageNum="14" />
@@ -1063,7 +1230,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="11 | Local Flora" />
                 <Text style={styles.h1}>Observed Local Flora & Plant Photos</Text>
                 <Text style={styles.bodyText}>
-                    A localized survey of regional flora was compiled using iNaturalist research-grade registries to identify native and naturalized species that thrive in the local microclimatic conditions. The photo cards below display observed species (such as *Adansonia digitata* and *Moringa oleifera*) that have adapted to prolonged dry seasons.
+                    A localized survey of regional flora was compiled using iNaturalist research-grade registries to identify native and naturalized species that thrive in the local microclimatic conditions. The photo cards below display observed native species that have adapted to local microclimatic seasons.
                 </Text>
                 <Text style={styles.bodyText}>
                     These adapted species serve as the structural backbone of our agroforestry guilds. Their inclusion ensures high survival rates and provides secondary yields such as edible leaves, fiber, oil, and medicinal compounds, creating a highly resilient agroecological buffer.
@@ -1091,9 +1258,9 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             {/* PAGE 16: Local Fauna & Animal photos (Sec 12) */}
             <Page size="A4" style={styles.page}>
                 <Header sectionTitle="12 | Local Fauna" />
-                <Text style={styles.h1}>Sahelian Wildlife Observations</Text>
+                <Text style={styles.h1}>{activeDesign.faunaTitle}</Text>
                 <Text style={styles.bodyText}>
-                    Local fauna observations provide critical insight into the surrounding trophic levels, pest-predator relationships, and biological nutrient cycles. The dynamic iNaturalist records catalog bird, mammal, and insect species occurring within a 5-kilometer radius of the design site.
+                    {activeDesign.faunaIntro}
                 </Text>
                 <Text style={styles.bodyText}>
                     Integrating fauna into the permaculture design is achieved by planting habitat corridors, installing raptor perches for rodent control, and utilizing insectary plant borders. This increases biodiversity, supports pollination loops, and establishes natural pest control vectors, reducing the need for chemical interventions.
@@ -1166,27 +1333,45 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             </Text>
                         </Svg>
                     </View>
-                    {maps?.waterHarvesting && (
-                        <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', position: 'relative' }}>
-                            <Image src={maps.waterHarvesting} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
                             
-                            {/* Blue print overlay */}
-                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', paddingHorizontal: 4, paddingVertical: 3, borderTopWidth: 0.8, borderTopColor: '#0284c7' }}>
-                                <Text style={{ fontSize: 5, color: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>{activeDesign.waterTitle.toUpperCase()}</Text>
-                                <Text style={{ fontSize: 4.2, color: '#e2e8f0', marginTop: 1 }}>{`Catchment: ${activeDesign.waterSpecs}`}</Text>
-                                <Text style={{ fontSize: 3.8, color: '#94a3b8' }}>{`Specs: Roof runoff harvesting via gravity pipeline`}</Text>
-                            </View>
+                            {/* Filter Column Outline */}
+                            <Rect x="60" y="25" width="80" height="100" fill="none" stroke="#38bdf8" strokeWidth="1.5" rx="2" />
                             
-                            {/* Mini Site Key Map */}
-                            <View style={{ position: 'absolute', top: 4, right: 4, width: 34, height: 34, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 3, borderWidth: 0.5, borderColor: '#cbd5e1', padding: 1.5, alignItems: 'center', justifyContent: 'center' }}>
-                                <Svg width="22" height="22" viewBox="0 0 50 50">
-                                    <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="2" />
-                                    <Circle cx="25" cy="25" r="3" fill="#ef4444" />
-                                </Svg>
-                                <Text style={{ fontSize: 3, color: '#475569', marginTop: 1, fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
-                            </View>
-                        </View>
-                    )}
+                            {/* Filter Layers */}
+                            {/* Layer 1: Sand (Top) */}
+                            <Rect x="61" y="26" width="78" height="25" fill="#fef08a" opacity={0.8} />
+                            <Text x="100" y="40" style={{ fontSize: 5, fill: '#713f12', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>FINE SILICA SAND (25%)</Text>
+                            
+                            {/* Layer 2: Charcoal (Middle-Top) */}
+                            <Rect x="61" y="51" width="78" height="25" fill="#334155" opacity={0.9} />
+                            <Text x="100" y="65" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>
+                                {`ACTIVATED ${climateZone === 'Arid' ? 'NEEM' : climateZone === 'Tropical' ? 'BAMBOO' : 'HARDWOOD'} CHARCOAL (25%)`}
+                            </Text>
+                            
+                            {/* Layer 3: Fine Gravel (Middle-Bottom) */}
+                            <Rect x="61" y="76" width="78" height="25" fill="#94a3b8" opacity={0.8} />
+                            <Text x="100" y="90" style={{ fontSize: 5, fill: '#1e293b', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>FINE PEA GRAVEL (25%)</Text>
+                            
+                            {/* Layer 4: Coarse Gravel (Bottom) */}
+                            <Rect x="61" y="101" width="78" height="23" fill="#64748b" opacity={0.8} />
+                            <Text x="100" y="115" style={{ fontSize: 5, fill: '#0f172a', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>COARSE DRAINAGE ROCK (25%)</Text>
+                            
+                            {/* Inflow Arrow */}
+                            <Path d="M 100 8 L 100 20 M 96 16 L 100 20 L 104 16" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                            <Text x="100" y="5" style={{ fontSize: 4, fill: '#38bdf8', textAnchor: 'middle' }}>RAW CATCHMENT INLET</Text>
+                            
+                            {/* Outflow Arrow */}
+                            <Path d="M 100 125 L 100 137 M 96 133 L 100 137 L 104 133" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                            <Text x="100" y="145" style={{ fontSize: 4.5, fill: '#38bdf8', textAnchor: 'middle' }}>TO POTABLE CISTERN STORAGE</Text>
+                            
+                            {/* Title */}
+                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>SLOW-SAND SOIL BIO-FILTER STACK</Text>
+                        </Svg>
+                    </View>
                 </View>
                 <Text style={styles.caption}>Figure 7: Technical schematic of first flush roof-to-cistern water harvesting loop.</Text>
                 <Footer pageNum="17" />
@@ -1243,27 +1428,65 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Text x={hX + 80} y={hY + 4} style={{ fontSize: 4, fill: '#14532d' }}>COMPANIONS</Text>
                         </Svg>
                     </View>
-                    {maps?.gravityDrip && (
-                        <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', position: 'relative' }}>
-                            <Image src={maps.gravityDrip} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
                             
-                            {/* Blue print overlay */}
-                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', paddingHorizontal: 4, paddingVertical: 3, borderTopWidth: 0.8, borderTopColor: '#0284c7' }}>
-                                <Text style={{ fontSize: 5, color: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>{activeDesign.dripTitle.toUpperCase()}</Text>
-                                <Text style={{ fontSize: 4.2, color: '#e2e8f0', marginTop: 1 }}>{`System: ${activeDesign.dripSpecs}`}</Text>
-                                <Text style={{ fontSize: 3.8, color: '#94a3b8' }}>{`Pressure Head: Elevated storage tank configuration`}</Text>
-                            </View>
+                            {/* Raised Header Tank */}
+                            <Rect x="20" y="15" width="30" height="35" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
+                            <Line x1="20" y1="35" x2="50" y2="35" stroke="#38bdf8" strokeWidth="0.5" />
+                            {/* Support Stand */}
+                            <Line x1="25" y1="50" x2="15" y2="80" stroke="#64748b" strokeWidth="1" />
+                            <Line x1="45" y1="50" x2="55" y2="80" stroke="#64748b" strokeWidth="1" />
+                            <Line x1="35" y1="50" x2="35" y2="80" stroke="#64748b" strokeWidth="1" />
+                            <Line x1="15" y1="80" x2="55" y2="80" stroke="#64748b" strokeWidth="1" />
+                            <Text x="35" y="32" style={{ fontSize: 4.5, fill: '#0369a1', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>HEADER TANK</Text>
                             
-                            {/* Mini Site Key Map */}
-                            <View style={{ position: 'absolute', top: 4, right: 4, width: 34, height: 34, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 3, borderWidth: 0.5, borderColor: '#cbd5e1', padding: 1.5, alignItems: 'center', justifyContent: 'center' }}>
-                                <Svg width="22" height="22" viewBox="0 0 50 50">
-                                    <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="2" />
-                                    <Circle cx="25" cy="25" r="3" fill="#ef4444" />
-                                </Svg>
-                                <Text style={{ fontSize: 3, color: '#475569', marginTop: 1, fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
-                            </View>
-                        </View>
-                    )}
+                            {/* Feed Main Pipe */}
+                            <Path d="M 50 40 L 65 40 L 65 85 L 140 85" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                            
+                            {/* Filter & Valve */}
+                            <Rect x="75" y="81" width="10" height="8" fill="#1e293b" stroke="#38bdf8" strokeWidth="0.8" />
+                            <Text x="80" y="77" style={{ fontSize: 3.5, fill: '#94a3b8', textAnchor: 'middle' }}>FILTER</Text>
+                            
+                            {/* Soil Line */}
+                            <Line x1="60" y1="110" x2="190" y2="110" stroke="#78350f" strokeWidth="2.5" />
+                            <Text x="155" y="120" style={{ fontSize: 4, fill: '#92400e' }}>BIOLOGICAL SOIL SPONGE</Text>
+                            
+                            {/* Drip Irrigation Lateral */}
+                            <Line x1="90" y1="108" x2="180" y2="108" stroke="#334155" strokeWidth="1.2" />
+                            
+                            {/* Plants and Drip Points */}
+                            <Path d="M 120 108 L 120 95 Q 125 90 120 85 Q 115 90 120 95" fill="none" stroke="#22c55e" strokeWidth="1" />
+                            <Circle cx="120" cy="111" r="1" fill="#38bdf8" />
+                            
+                            {/* If Arid or Subtropical, show a Buried Olla */}
+                            {(climateZone === 'Arid' || climateZone === 'Subtropical') ? (
+                                <>
+                                    <Path d="M 145 108 L 155 108 Q 158 115 155 125 Q 150 128 145 125 Q 142 115 145 108 Z" fill="#b45309" stroke="#78350f" strokeWidth="0.8" />
+                                    <Text x="150" y="117" style={{ fontSize: 3, fill: '#fef3c7', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>OLLA</Text>
+                                    <Path d="M 141 118 L 138 118 M 159 118 L 162 118" stroke="#38bdf8" strokeWidth="0.5" />
+                                    <Path d="M 120 108 L 140 108" fill="none" stroke="#38bdf8" strokeWidth="1" strokeDasharray="1,1" />
+                                    <Text x="130" y="104" style={{ fontSize: 3, fill: '#38bdf8' }}>Olla Feed Lateral</Text>
+                                </>
+                            ) : (
+                                <>
+                                    <Path d="M 160 108 L 160 90 Q 165 85 160 80" fill="none" stroke="#22c55e" strokeWidth="1" />
+                                    <Circle cx="160" cy="111" r="1" fill="#38bdf8" />
+                                    <Text x="160" y="104" style={{ fontSize: 3, fill: '#38bdf8', textAnchor: 'middle' }}>Drip Emitter</Text>
+                                </>
+                            )}
+                            
+                            {/* Pressure Info */}
+                            <Text x="80" y="25" style={{ fontSize: 4.5, fill: '#e2e8f0' }}>{`Static Head: ~${elevation ? (1.5 + elevation.slope * 0.1).toFixed(1) : "2.0"} m`}</Text>
+                            <Text x="80" y="32" style={{ fontSize: 4.5, fill: '#38bdf8' }}>{`Pressure: ~${elevation ? ((1.5 + elevation.slope * 0.1) * 0.1).toFixed(2) : "0.20"} bar`}</Text>
+                            <Text x="80" y="39" style={{ fontSize: 4.5, fill: '#38bdf8' }}>NO PUMP REQUIRED</Text>
+                            
+                            {/* Title */}
+                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>GRAVITY-FED DRIP SYSTEM SCHEMATIC</Text>
+                        </Svg>
+                    </View>
                 </View>
                 <Text style={styles.caption}>Figure 8: Technical schematic of passive gravity drip pipeline.</Text>
                 <Footer pageNum="18" />
@@ -1308,27 +1531,50 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Text x={40 + scaleBarWidthSvg - 10} y={193} style={{ fontSize: 6, fill: '#1b4332' }}>{scaleMeters}m</Text>
                         </Svg>
                     </View>
-                    {maps?.contourSwales && (
-                        <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', position: 'relative' }}>
-                            <Image src={maps.contourSwales} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
                             
-                            {/* Blue print overlay */}
-                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', paddingHorizontal: 4, paddingVertical: 3, borderTopWidth: 0.8, borderTopColor: '#0284c7' }}>
-                                <Text style={{ fontSize: 5, color: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>{activeDesign.swalesTitle.toUpperCase()}</Text>
-                                <Text style={{ fontSize: 4.2, color: '#e2e8f0', marginTop: 1 }}>{`Earthworks: ${activeDesign.swalesSpecs}`}</Text>
-                                <Text style={{ fontSize: 3.8, color: '#94a3b8' }}>{`Slope: ${elevation ? elevation.slope.toFixed(1) : "1.2"}% | Active Soil Sponge System`}</Text>
-                            </View>
+                            {/* Hillside Slope Contour */}
+                            <Path d="M 10 60 L 60 70 Q 75 72 80 80 Q 95 105 115 102 Q 130 98 140 80 Q 150 70 190 78" fill="none" stroke="#78350f" strokeWidth="2" />
                             
-                            {/* Mini Site Key Map */}
-                            <View style={{ position: 'absolute', top: 4, right: 4, width: 34, height: 34, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 3, borderWidth: 0.5, borderColor: '#cbd5e1', padding: 1.5, alignItems: 'center', justifyContent: 'center' }}>
-                                <Svg width="22" height="22" viewBox="0 0 50 50">
-                                    <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="2" />
-                                    <Circle cx="25" cy="25" r="3" fill="#ef4444" />
-                                </Svg>
-                                <Text style={{ fontSize: 3, color: '#475569', marginTop: 1, fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
-                            </View>
-                        </View>
-                    )}
+                            {/* Ditch Infill (Mulch Basin) */}
+                            <Path d="M 80 80 Q 95 105 115 102 Q 120 95 116 85 Z" fill="#92400e" opacity={0.6} />
+                            <Text x="100" y="93" style={{ fontSize: 3.5, fill: '#fef3c7', textAnchor: 'middle' }}>ORGANIC MULCH</Text>
+                            
+                            {/* Water Level in Ditch */}
+                            <Path d="M 83 82 Q 98 98 113 95" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+                            
+                            {/* Infiltration Arrows (Water Lens) */}
+                            <Path d="M 98 102 L 98 122 M 94 118 L 98 122 L 102 118" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
+                            <Path d="M 110 102 L 118 118 M 114 116 L 118 118 L 119 113" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
+                            <Circle cx="102" cy="130" r="12" fill="#bae6fd" opacity={0.35} />
+                            <Text x="102" y="132" style={{ fontSize: 3.5, fill: '#0284c7', textAnchor: 'middle', fontFamily: 'Helvetica-Bold' }}>WATER LENS</Text>
+                            
+                            {/* Tree planted on the Berm */}
+                            <Rect x="144" y="62" width="4" height="15" fill="#78350f" />
+                            <Circle cx="146" cy="53" r="10" fill="#22c55e" opacity={0.9} />
+                            
+                            {/* Companion Plant on Berm slope */}
+                            <Circle cx="160" cy="74" r="3" fill="#fbbf24" />
+                            <Line x1="160" y1="74" x2="160" y2="77" stroke="#15803d" strokeWidth="0.8" />
+                            
+                            {/* Labels */}
+                            <Text x="146" y="38" style={{ fontSize: 4.5, fill: '#4ade80', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>
+                                {climateZone === 'Arid' ? 'Baobab Tree' : climateZone === 'Tropical' ? 'Banana Plant' : climateZone === 'Temperate' ? 'Apple Tree' : 'Olive Tree'}
+                            </Text>
+                            <Text x="175" y="65" style={{ fontSize: 3.5, fill: '#fcd34d', textAnchor: 'middle' }}>
+                                {climateZone === 'Arid' ? 'Pigeon Pea' : climateZone === 'Tropical' ? 'Vetiver Grass' : climateZone === 'Temperate' ? 'Currants' : 'Spanish Broom'}
+                            </Text>
+                            
+                            <Text x="15" y="100" style={{ fontSize: 4.5, fill: '#94a3b8' }}>{`Slope: ${elevation ? elevation.slope.toFixed(1) : "1.2"}%`}</Text>
+                            <Text x="15" y="107" style={{ fontSize: 4.5, fill: '#38bdf8' }}>PASSIVE RUNOFF WATERWAY</Text>
+                            
+                            {/* Title */}
+                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>CONTOUR SWALE CROSS-SECTION</Text>
+                        </Svg>
+                    </View>
                 </View>
                 <Text style={styles.caption}>Figure 9: Infiltration contour swales and storage pond network overlaid on top of high-resolution satellite imagery.</Text>
                 <Footer pageNum="19" />
@@ -1379,27 +1625,51 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Path d={`M ${hX} ${hY} L ${hX + 25} ${hY + 12}`} fill="none" stroke="#10b981" strokeWidth="1.5" />
                         </Svg>
                     </View>
-                    {maps?.functionalConcept && (
-                        <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', position: 'relative' }}>
-                            <Image src={maps.functionalConcept} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                        <Svg width="100%" height="100%" viewBox="0 0 200 160">
+                            <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
+                            <Path d="M 0 40 L 200 40 M 0 80 L 200 80 M 0 120 L 200 120 M 40 0 L 40 160 M 80 0 L 80 160 M 120 0 L 120 160 M 160 0 L 160 160" stroke="#1e293b" strokeWidth="0.5" />
                             
-                            {/* Blue print overlay */}
-                            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', paddingHorizontal: 4, paddingVertical: 3, borderTopWidth: 0.8, borderTopColor: '#0284c7' }}>
-                                <Text style={{ fontSize: 5, color: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>FUNCTIONAL CONCEPT FLOW DIAGRAM</Text>
-                                <Text style={{ fontSize: 4.2, color: '#e2e8f0', marginTop: 1 }}>{`Flow Strategy: Integrated closed-loop cycles`}</Text>
-                                <Text style={{ fontSize: 3.8, color: '#94a3b8' }}>{`Site: ${userData.projectName || "Unnamed"} | Zone: ${activeDesign.zoneName}`}</Text>
-                            </View>
+                            {/* Bubble 1: Zone 0 Homestead */}
+                            <Rect x="20" y="20" width="45" height="25" fill="#1e293b" stroke="#38bdf8" strokeWidth="1" rx="4" />
+                            <Text x="42.5" y="31" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 0: HOMESTEAD</Text>
+                            <Text x="42.5" y="39" style={{ fontSize: 3.5, fill: '#38bdf8', textAnchor: 'middle' }}>Roof Catchment & Greywater</Text>
                             
-                            {/* Mini Site Key Map */}
-                            <View style={{ position: 'absolute', top: 4, right: 4, width: 34, height: 34, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 3, borderWidth: 0.5, borderColor: '#cbd5e1', padding: 1.5, alignItems: 'center', justifyContent: 'center' }}>
-                                <Svg width="22" height="22" viewBox="0 0 50 50">
-                                    <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="2" />
-                                    <Circle cx="25" cy="25" r="3" fill="#ef4444" />
-                                </Svg>
-                                <Text style={{ fontSize: 3, color: '#475569', marginTop: 1, fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
-                            </View>
-                        </View>
-                    )}
+                            {/* Bubble 2: Zone 1 Kitchen Garden */}
+                            <Rect x="85" y="20" width="45" height="25" fill="#1e293b" stroke="#10b981" strokeWidth="1" rx="4" />
+                            <Text x="107.5" y="31" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 1: KITCHEN</Text>
+                            <Text x="107.5" y="39" style={{ fontSize: 3.5, fill: '#10b981', textAnchor: 'middle' }}>Intensive Annuals & Herbs</Text>
+                            
+                            {/* Bubble 3: Zone 2/3 Orchards */}
+                            <Rect x="85" y="75" width="45" height="25" fill="#1e293b" stroke="#fbbf24" strokeWidth="1" rx="4" />
+                            <Text x="107.5" y="86" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 2: GUILD ORCHARD</Text>
+                            <Text x="107.5" y="94" style={{ fontSize: 3.5, fill: '#fbbf24', textAnchor: 'middle' }}>{`(${activeDesign.plantGuildTitle.split(' ')[0]} Systems)`}</Text>
+                            
+                            {/* Bubble 4: Zone 4 Shelterbelt */}
+                            <Rect x="20" y="75" width="45" height="25" fill="#1e293b" stroke="#15803d" strokeWidth="1" rx="4" />
+                            <Text x="42.5" y="86" style={{ fontSize: 4.5, fill: '#f1f5f9', fontFamily: 'Helvetica-Bold', textAnchor: 'middle' }}>ZONE 4: SHELTERBELT</Text>
+                            <Text x="42.5" y="94" style={{ fontSize: 3.5, fill: '#4ade80', textAnchor: 'middle' }}>Windbreak & Humus Cycle</Text>
+                            
+                            {/* Arrows & Flows */}
+                            <Path d="M 65 27.5 L 85 27.5 M 81 24.5 L 85 27.5 L 81 30.5" fill="none" stroke="#38bdf8" strokeWidth="1" />
+                            <Text x="75" y="24" style={{ fontSize: 3, fill: '#38bdf8', textAnchor: 'middle' }}>Rainwater Flow</Text>
+                            
+                            <Path d={`M 42.5 45 L 42.5 60 L 85 87.5 M 81 84.5 L 85 87.5 L 82 91`} fill="none" stroke="#3b82f6" strokeWidth="1" />
+                            <Text x="50" y="55" style={{ fontSize: 3, fill: '#60a5fa' }}>Greywater Flow</Text>
+                            
+                            <Path d="M 65 87.5 L 85 87.5 M 81 84.5 L 85 87.5 L 81 90.5" fill="none" stroke="#10b981" strokeWidth="1" />
+                            <Text x="75" y="84" style={{ fontSize: 3, fill: '#10b981', textAnchor: 'middle' }}>Mulch Biomass</Text>
+                            
+                            <Path d="M 107.5 75 L 107.5 45 M 104.5 49 L 107.5 45 L 110.5 49" fill="none" stroke="#b45309" strokeWidth="1" />
+                            <Text x="110" y="60" style={{ fontSize: 3, fill: '#b45309' }}>Compost & Nutrients</Text>
+                            
+                            <Path d="M 32.5 75 L 32.5 45 M 29.5 49 L 32.5 45 L 35.5 49" fill="none" stroke="#ef4444" strokeWidth="1" strokeDasharray="2,2" />
+                            <Text x="25" y="60" style={{ fontSize: 3, fill: '#f87171' }}>Wind Buffer</Text>
+                            
+                            {/* Title */}
+                            <Text x="8" y="152" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>FUNCTIONAL CONNECTIVITY & ENERGY FLOWS</Text>
+                        </Svg>
+                    </View>
                 </View>
                 <Text style={styles.caption}>Figure 10: Concept Bubble Diagram detailing functional zonings and energy relationships overlaid on top of high-resolution satellite imagery.</Text>
                 <Footer pageNum="20" />
@@ -1434,31 +1704,126 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Text style={styles.bodyText}>
                     {activeDesign.guildLowerText}
                 </Text>
-                {maps?.bananaGuild ? (
-                    <View style={{ width: '100%', height: 160, borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', marginTop: 5, position: 'relative' }}>
-                        <Image src={maps.bananaGuild} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <View style={{ width: '100%', height: 160, borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', marginTop: 5, backgroundColor: '#0f172a', position: 'relative' }}>
+                    <Svg width="100%" height="100%" viewBox="0 0 400 160">
+                        {/* Blueprint background grid */}
+                        <Rect x="0" y="0" width="400" height="160" fill="#0f172a" />
+                        <Path d="M 0 20 L 400 20 M 0 40 L 400 40 M 0 60 L 400 60 M 0 80 L 400 80 M 0 100 L 400 100 M 0 120 L 400 120 M 0 140 L 400 140 M 50 0 L 50 160 M 100 0 L 100 160 M 150 0 L 150 160 M 200 0 L 200 160 M 250 0 L 250 160 M 300 0 L 300 160 M 350 0 L 350 160" stroke="#1e293b" strokeWidth="0.5" />
                         
-                        {/* Blue print overlay */}
-                        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', paddingHorizontal: 4, paddingVertical: 3, borderTopWidth: 0.8, borderTopColor: '#0284c7' }}>
-                            <Text style={{ fontSize: 5, color: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>{activeDesign.guildLowerHeading.toUpperCase()}</Text>
-                            <Text style={{ fontSize: 4.2, color: '#e2e8f0', marginTop: 1 }}>{`Companion Guild Layout | Calibrated for: ${activeDesign.zoneName}`}</Text>
-                            <Text style={{ fontSize: 3.8, color: '#94a3b8' }}>{`Specs: Concentric multi-tier companion planting layout`}</Text>
-                        </View>
+                        {/* Ground line */}
+                        <Line x1="10" y1="120" x2="390" y2="120" stroke="#475569" strokeWidth="1.2" />
+
+                        {/* Draw Overstory Canopy tree trunk */}
+                        <Rect x="65" y="55" width="8" height="65" fill="#7c2d12" />
+
+                        {/* Leaves/Canopy based on climate zone */}
+                        {climateZone === 'Arid' ? (
+                            <G>
+                                {/* Flat umbrella canopy of Acacia */}
+                                <Path d="M 20 60 C 20 35 118 35 118 60 Z" fill="#14532d" fillOpacity={0.8} stroke="#16a34a" strokeWidth="1" />
+                                <Path d="M 35 55 C 35 30 105 30 105 55 Z" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
+                            </G>
+                        ) : climateZone === 'Tropical' ? (
+                            <G>
+                                {/* Tall tropical leafy canopy */}
+                                <Circle cx="69" cy="45" r="28" fill="#14532d" fillOpacity={0.8} stroke="#16a34a" strokeWidth="1" />
+                                <Circle cx="50" cy="55" r="22" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
+                                <Circle cx="88" cy="55" r="22" fill="#166534" fillOpacity={0.85} stroke="#15803d" strokeWidth="1" />
+                            </G>
+                        ) : climateZone === 'Temperate' ? (
+                            <G>
+                                {/* Apple tree round canopy */}
+                                <Circle cx="69" cy="45" r="28" fill="#166534" fillOpacity={0.8} stroke="#15803d" strokeWidth="1" />
+                                <Circle cx="60" cy="35" r="15" fill="#84cc16" fillOpacity={0.8} />
+                                {/* Small red apples */}
+                                <Circle cx="50" cy="45" r="2" fill="#ef4444" />
+                                <Circle cx="70" cy="35" r="2" fill="#ef4444" />
+                                <Circle cx="80" cy="55" r="2" fill="#ef4444" />
+                            </G>
+                        ) : (
+                            <G>
+                                {/* Mediterranean Olive/Fig canopy */}
+                                <Circle cx="69" cy="50" r="25" fill="#3f6212" fillOpacity={0.8} stroke="#4d7c0f" strokeWidth="1" />
+                                <Circle cx="52" cy="55" r="18" fill="#4d7c0f" fillOpacity={0.85} stroke="#65a30d" strokeWidth="1" />
+                                <Circle cx="86" cy="55" r="18" fill="#4d7c0f" fillOpacity={0.85} stroke="#65a30d" strokeWidth="1" />
+                            </G>
+                        )}
+
+                        {/* Draw Understory (Layer 2) */}
+                        <Rect x="145" y="80" width="5" height="40" fill="#a16207" />
+                        {climateZone === 'Tropical' || climateZone === 'Arid' ? (
+                            <G>
+                                {/* Banana leaves */}
+                                <Path d="M 147 80 Q 120 70 115 88 Q 135 92 147 80" fill="#22c55e" fillOpacity={0.85} />
+                                <Path d="M 147 80 Q 175 70 180 88 Q 160 92 147 80" fill="#22c55e" fillOpacity={0.85} />
+                                <Path d="M 147 75 Q 147 50 140 45 Q 155 50 147 75" fill="#15803d" fillOpacity={0.85} />
+                            </G>
+                        ) : (
+                            <G>
+                                {/* Small fig/shrub tree */}
+                                <Circle cx="147" cy="75" r="16" fill="#166534" fillOpacity={0.8} stroke="#15803d" strokeWidth="1" />
+                            </G>
+                        )}
+
+                        {/* Draw Chop-and-Drop Biomass (Layer 3) */}
+                        <Circle cx="215" cy="102" r="12" fill="#15803d" fillOpacity={0.75} stroke="#16a34a" strokeWidth="1" />
+                        <Circle cx="205" cy="107" r="10" fill="#166534" fillOpacity={0.8} />
+                        <Circle cx="225" cy="107" r="10" fill="#166534" fillOpacity={0.8} />
+
+                        {/* Draw Groundcover (Layer 4) */}
+                        <Path d="M 275 120 L 280 110 L 285 120 L 290 108 L 295 120" fill="none" stroke="#22c55e" strokeWidth="1.5" />
+                        <Circle cx="320" cy="117" r="3" fill="#a3e635" />
+                        <Circle cx="335" cy="117" r="3.5" fill="#a3e635" />
+
+                        {/* Roots under the ground level */}
+                        <Path d="M 69 120 Q 45 145 69 155 Q 85 140 69 120" fill="none" stroke="#38bdf8" strokeWidth="1.2" strokeDasharray="2,2" />
+                        <Path d="M 147 120 Q 130 135 147 148" fill="none" stroke="#10b981" strokeWidth="1.2" strokeDasharray="2,2" />
+                        <Path d="M 215 120 Q 205 130 220 140" fill="none" stroke="#fbbf24" strokeWidth="1.2" strokeDasharray="2,2" />
+
+                        {/* Overstory pointer */}
+                        <Path d="M 69 45 L 235 25" fill="none" stroke="#38bdf8" strokeWidth="0.8" />
+                        <Circle cx="69" cy="45" r="1.5" fill="#38bdf8" />
+                        <Text x="242" y="22" style={{ fontSize: 4.5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>OVERSTORY CANOPY</Text>
+                        <Text x="242" y="27" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[0]?.species || "Overstory Tree"}</Text>
+                        <Text x="242" y="32" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[0]?.role || "Provides light shade & wind protection"}</Text>
                         
+                        {/* Understory pointer */}
+                        <Path d="M 147 75 L 235 55" fill="none" stroke="#10b981" strokeWidth="0.8" />
+                        <Circle cx="147" cy="75" r="1.5" fill="#10b981" />
+                        <Text x="242" y="52" style={{ fontSize: 4.5, fill: '#10b981', fontFamily: 'Helvetica-Bold' }}>UNDERSTORY / ACCUMULATOR</Text>
+                        <Text x="242" y="57" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[1]?.species || "Understory"}</Text>
+                        <Text x="242" y="62" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[1]?.role || "Nitrogen fixation or heavy feeding"}</Text>
+                        
+                        {/* Chop-and-Drop pointer */}
+                        <Path d="M 215 105 L 235 85" fill="none" stroke="#fbbf24" strokeWidth="0.8" />
+                        <Circle cx="215" cy="105" r="1.5" fill="#fbbf24" />
+                        <Text x="242" y="82" style={{ fontSize: 4.5, fill: '#fbbf24', fontFamily: 'Helvetica-Bold' }}>CHOP-AND-DROP BIOMASS</Text>
+                        <Text x="242" y="87" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[2]?.species || "Biomass Producer"}</Text>
+                        <Text x="242" y="92" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[2]?.role || "Provides mulch material and nutrient return"}</Text>
+                        
+                        {/* Herbaceous pointer */}
+                        <Path d="M 285 115 L 235 115" fill="none" stroke="#a3e635" strokeWidth="0.8" />
+                        <Circle cx="285" cy="115" r="1.5" fill="#a3e635" />
+                        <Text x="242" y="112" style={{ fontSize: 4.5, fill: '#a3e635', fontFamily: 'Helvetica-Bold' }}>HERBACEOUS COMPANION</Text>
+                        <Text x="242" y="117" style={{ fontSize: 4, fill: '#e2e8f0' }}>{activeDesign.guildSpecies[3]?.species || "Groundcover"}</Text>
+                        <Text x="242" y="122" style={{ fontSize: 3.5, fill: '#94a3b8' }}>{activeDesign.guildSpecies[3]?.role || "Dynamic accumulator & root protection"}</Text>
+
+                        {/* Title block info */}
+                        <Text x="10" y="142" style={{ fontSize: 5, fill: '#38bdf8', fontFamily: 'Helvetica-Bold' }}>{activeDesign.guildLowerHeading.toUpperCase()}</Text>
+                        <Text x="10" y="148" style={{ fontSize: 4.2, fill: '#e2e8f0' }}>{`Companion Guild Layout | Calibrated for: ${activeDesign.zoneName}`}</Text>
+                        <Text x="10" y="153" style={{ fontSize: 3.8, fill: '#94a3b8' }}>{`Location: ${latStr} | System: Concentric multi-tier companion planting`}</Text>
+
                         {/* Mini Site Key Map */}
-                        <View style={{ position: 'absolute', top: 4, right: 4, width: 34, height: 34, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 3, borderWidth: 0.5, borderColor: '#cbd5e1', padding: 1.5, alignItems: 'center', justifyContent: 'center' }}>
-                            <Svg width="22" height="22" viewBox="0 0 50 50">
-                                <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="2" />
-                                <Circle cx="25" cy="25" r="3" fill="#ef4444" />
-                            </Svg>
-                            <Text style={{ fontSize: 3, color: '#475569', marginTop: 1, fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
-                        </View>
-                    </View>
-                ) : (
-                    <View style={{ width: '100%', height: 80, backgroundColor: '#fafaf9', borderRadius: 4, marginTop: 5, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1' }}>
-                        <Text style={{ fontSize: 8, color: '#475569' }}>Crop Guild Diagram (Asset Compiling...)</Text>
-                    </View>
-                )}
+                        <G transform="translate(360, 10)">
+                            <Rect x="0" y="0" width="34" height="34" fill="#ffffff" fillOpacity={0.9} rx="3" stroke="#cbd5e1" strokeWidth="0.5" />
+                            <G transform="translate(6, 6) scale(0.4)">
+                                <Polygon points={miniBoundaryPoints} fill="none" stroke="#10b981" strokeWidth="3" />
+                                <Circle cx="25" cy="25" r="4" fill="#ef4444" />
+                            </G>
+                            <Text x="17" y="31" style={{ fontSize: 3, fill: '#475569', textAnchor: 'middle', fontFamily: 'Helvetica-Bold' }}>KEY MAP</Text>
+                        </G>
+                    </Svg>
+                </View>
                 
                 <Footer pageNum="21" />
             </Page>

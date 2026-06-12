@@ -55,6 +55,109 @@ export async function GET(request: Request) {
       return new Response('Invalid lat or lng', { status: 400 });
     }
 
+    // Determine climate zone dynamically
+    let climateZone: 'Arid' | 'Tropical' | 'Temperate' | 'Subtropical' = 'Arid';
+    const absLat = Math.abs(lat);
+    if (absLat > 35) {
+      climateZone = 'Temperate';
+    } else if (absLat > 22 && absLat <= 35) {
+      climateZone = 'Subtropical';
+    } else {
+      if (absLat < 10) {
+        climateZone = 'Tropical';
+      } else {
+        climateZone = 'Arid';
+      }
+    }
+
+    try {
+      const climRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&daily=precipitation_sum&timezone=auto`,
+        { next: { revalidate: 3600 } }
+      );
+      if (climRes.ok) {
+        const data = await climRes.json();
+        if (data) {
+          const temp = data.current_weather?.temperature || 24.5;
+          const precip = data.daily?.precipitation_sum?.[0] || 1.2;
+          const annualPrecip = precip * 365;
+          if (temp >= 22 && annualPrecip >= 1200) {
+            climateZone = 'Tropical';
+          } else if (absLat > 35) {
+            climateZone = 'Temperate';
+          } else if (absLat > 22 && absLat <= 35) {
+            climateZone = 'Subtropical';
+          } else {
+            if (annualPrecip < 600) {
+              climateZone = 'Arid';
+            } else {
+              climateZone = 'Tropical';
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('KML weather fetch error, using latitude heuristic:', err);
+    }
+
+    const getAridRegionName = (lLat: number, lLng: number): string => {
+      if (lLat >= 11 && lLat <= 20 && lLng >= -18 && lLng <= 25) {
+        return "Sahelian";
+      }
+      if (lLat >= 24 && lLat <= 40 && lLng >= -125 && lLng <= -100) {
+        return "Sonoran/Mojave";
+      }
+      if (lLat >= 30 && lLat <= 45 && lLng >= -10 && lLng <= 40) {
+        return "Mediterranean";
+      }
+      if (lLat >= -38 && lLat <= -15 && lLng >= 110 && lLng <= 155) {
+        return "Australian Outback";
+      }
+      if (lLat >= 15 && lLat <= 35 && lLng >= 30 && lLng <= 60) {
+        return "Arabian";
+      }
+      return "Arid";
+    };
+
+    const getAridWindName = (lLat: number, lLng: number): string => {
+      if (lLat >= 11 && lLat <= 20 && lLng >= -18 && lLng <= 25) {
+        return "Northeast Harmattan Winds";
+      }
+      if (lLat >= 24 && lLat <= 40 && lLng >= -125 && lLng <= -100) {
+        return "Santa Ana and Desert Winds";
+      }
+      if (lLat >= -38 && lLat <= -15 && lLng >= 110 && lLng <= 155) {
+        return "Dry Interior Winds";
+      }
+      if (lLat >= 15 && lLat <= 35 && lLng >= 30 && lLng <= 60) {
+        return "Hot Shamal Winds";
+      }
+      return "Dryland Winds";
+    };
+
+    const aridRegion = getAridRegionName(lat, lng);
+    const aridWind = getAridWindName(lat, lng);
+
+    const windbreakConfig = {
+      Arid: {
+        name: `${aridWind} Shelterbelt`,
+        description: `Tiered multi-row shelterbelt blocks planted with Neem, Acacia, and Prosopis to buffer dry ${aridRegion.toLowerCase()} wind vectors.`
+      },
+      Tropical: {
+        name: "Tropical Monsoon Windbreak",
+        description: "Dense multi-story shelterbelt planted with Casuarina, Mango, and Bamboo to buffer heavy storm and monsoon wind vectors."
+      },
+      Temperate: {
+        name: "Northern Cold-Wind Shelterbelt",
+        description: "Evergreen and deciduous shelterbelt block planted with Pine, Oak, and Currants to buffer freezing winter winds."
+      },
+      Subtropical: {
+        name: "Mediterranean Sea-Wind Shelterbelt",
+        description: "Drought-hardy shelterbelt planted with Cypress, Olive, Fig, and Rosemary to buffer dry summer winds and sea breezes."
+      }
+    };
+    const activeWindbreak = windbreakConfig[climateZone] || windbreakConfig.Arid;
+
     let boundaryCoords: Array<{ lat: number, lng: number }> = [];
     if (boundaryParam) {
       try {
@@ -290,8 +393,8 @@ export async function GET(request: Request) {
       <name>Shelterbelts and Windbreaks</name>
       <open>1</open>
       <Placemark>
-        <name>Northeast Harmattan Windbreak</name>
-        <description>Tiered multi-row shelterbelt blocks planted with Neem, Acacia, and Prosopis to buffer dry Sahelian wind vectors.</description>
+        <name>${activeWindbreak.name}</name>
+        <description>${activeWindbreak.description}</description>
         <styleUrl>#shelterbeltStyle</styleUrl>
         <LineString>
           <tessellate>1</tessellate>
