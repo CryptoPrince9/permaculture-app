@@ -255,6 +255,11 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
     const lngVal = location ? location.lng : -16.25148;
     const isNorthern = latVal >= 0;
 
+    const precipVal = climate ? climate.precipitation : 1.2;
+    const tempVal = climate ? climate.temperature : 24.5;
+    const absLat = Math.abs(latVal);
+    const annualPrecip = precipVal * 365;
+
     const getAridRegionName = (lLat: number, lLng: number): string => {
         if (lLat >= 11 && lLat <= 20 && lLng >= -18 && lLng <= 25) {
             return "Sahelian";
@@ -271,6 +276,18 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
         if (lLat >= 15 && lLat <= 35 && lLng >= 30 && lLng <= 60) {
             return "Arabian Dryland";
         }
+        if (lLat >= 20 && lLat <= 32 && lLng >= -108 && lLng <= -102) {
+            return "Chihuahuan Desert";
+        }
+        if (lLat >= -30 && lLat <= -5 && lLng >= -75 && lLng <= -68) {
+            return "Atacama/Peruvian Desert";
+        }
+        if (lLat >= 35 && lLat <= 48 && lLng >= 90 && lLng <= 120) {
+            return "Gobi Desert";
+        }
+        if (lLat >= -35 && lLat <= -15 && lLng >= 12 && lLng <= 30) {
+            return "Kalahari/Namib Desert";
+        }
         return "Arid Dryland";
     };
 
@@ -286,6 +303,18 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
         }
         if (lLat >= 15 && lLat <= 35 && lLng >= 30 && lLng <= 60) {
             return "hot Shamal winds";
+        }
+        if (lLat >= 20 && lLat <= 32 && lLng >= -108 && lLng <= -102) {
+            return "Chihuahuan dust storms";
+        }
+        if (lLat >= -30 && lLat <= -5 && lLng >= -75 && lLng <= -68) {
+            return "dry coastal Humboldt winds";
+        }
+        if (lLat >= 35 && lLat <= 48 && lLng >= 90 && lLng <= 120) {
+            return "cold Siberian-Mongolian winds";
+        }
+        if (lLat >= -35 && lLat <= -15 && lLng >= 12 && lLng <= 30) {
+            return "dry Berg winds";
         }
         return "prevailing dryland winds";
     };
@@ -312,6 +341,34 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 description: "directs scarce rainwater down its branches to its root zone, providing light shade and high-quality leaf litter to enrich the surrounding soil and shield understory crops."
             };
         }
+        if (lLat >= 20 && lLat <= 32 && lLng >= -108 && lLng <= -102) {
+            return {
+                name: "Larrea tridentata",
+                common: "Creosote Bush",
+                description: "acts as a hardy nurse plant under extreme heat, utilizing its shallow, lateral roots to trap rainfall and leaf litter, creating micro-island habitats for young understory species."
+            };
+        }
+        if (lLat >= -30 && lLat <= -5 && lLng >= -75 && lLng <= -68) {
+            return {
+                name: "Prosopis tamarugo",
+                common: "Tamarugo",
+                description: "draws moisture from deep underground saline aquifers and releases it in its upper root zones through hydraulic lift, enabling support crops to survive extreme dry coastal desert periods."
+            };
+        }
+        if (lLat >= 35 && lLat <= 48 && lLng >= 90 && lLng <= 120) {
+            return {
+                name: "Haloxylon ammodendron",
+                common: "Saxaul",
+                description: "boasts a massive root system that binds sandy dunes, acts as a primary wind-breaker against harsh Siberian storms, and collects morning dew on its succulent branches."
+            };
+        }
+        if (lLat >= -35 && lLat <= -15 && lLng >= 12 && lLng <= 30) {
+            return {
+                name: "Boscia albitrunca",
+                common: "Shepherd's Tree",
+                description: "acts as a key shade anchor in Kalahari sands, mining deep subsoil moisture and providing high-protein evergreen forage and micro-climate shelter to companion crops."
+            };
+        }
         return {
             name: "Acacia tortilis",
             common: "Umbrella Thorn",
@@ -319,14 +376,209 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
         };
     };
 
+    const getTemperateRegionName = (lLat: number, lLng: number, lPrecip: number): string => {
+        if (lLat >= 40 && lLat <= 60 && lLng >= -130 && lLng <= -120 && lPrecip > 1200) {
+            return "Pacific Northwest Temperate Rainforest";
+        }
+        if (lLat >= 35 && lLat <= 50 && lLng >= -85 && lLng <= -70) {
+            return "Eastern North American Deciduous Forest";
+        }
+        if (lLat >= 50 && lLat <= 65 && lLng >= 5 && lLng <= 30) {
+            return "Northern European Beech-Birch Forest";
+        }
+        if (lLat <= -35 && lLat >= -50 && ((lLng >= -75 && lLng <= -70) || (lLng >= 165 && lLng <= 178))) {
+            return "Southern Hemisphere Beech Temperate Forest";
+        }
+        return "Temperate Deciduous Forest Zone";
+    };
+
+    const getTemperateOverstory = (lLat: number, lLng: number, lPrecip: number): string => {
+        if (lLat >= 40 && lLat <= 60 && lLng >= -130 && lLng <= -120 && lPrecip > 1200) {
+            return "Pseudotsuga menziesii (Douglas Fir)";
+        }
+        if (lLat >= 35 && lLat <= 50 && lLng >= -85 && lLng <= -70) {
+            return "Acer saccharum (Sugar Maple) / Quercus alba";
+        }
+        if (lLat >= 50 && lLat <= 65 && lLng >= 5 && lLng <= 30) {
+            return "Fagus sylvatica (European Beech) / Betula pendula";
+        }
+        if (lLat <= -35 && lLat >= -50 && ((lLng >= -75 && lLng <= -70) || (lLng >= 165 && lLng <= 178))) {
+            return "Nothofagus dombeyi (Coihue) / Nothofagus menziesii";
+        }
+        return "Malus domestica (Honeycrisp Apple)";
+    };
+
+    const getTropicalRegionName = (lLat: number, lLng: number): string => {
+        if (lLat >= -15 && lLat <= 5 && lLng >= -75 && lLng <= -50) {
+            return "Amazonian Equatorial Rainforest";
+        }
+        if (lLat >= 5 && lLat <= 22 && lLng >= 95 && lLng <= 120) {
+            return "Southeast Asian Tropical Monsoon Forest";
+        }
+        if (lLat >= 10 && lLat <= 25 && lLng >= -85 && lLng <= -60) {
+            return "Caribbean Insular Dry-Humid Tropics";
+        }
+        if (lLat >= -10 && lLat <= 10 && lLng >= 10 && lLng <= 30) {
+            return "Congolian Equatorial Rainforest";
+        }
+        return "Humid Tropical Forest Zone";
+    };
+
+    const getTropicalOverstory = (lLat: number, lLng: number): string => {
+        if (lLat >= -15 && lLat <= 5 && lLng >= -75 && lLng <= -50) {
+            return "Theobroma grandiflorum (Cupuacu) / Bertholletia excelsa";
+        }
+        if (lLat >= 5 && lLat <= 22 && lLng >= 95 && lLng <= 120) {
+            return "Artocarpus heterophyllus (Jackfruit) / Mangifera indica";
+        }
+        if (lLat >= 10 && lLat <= 25 && lLng >= -85 && lLng <= -60) {
+            return "Persea americana (Avocado) / Annona muricata";
+        }
+        if (lLat >= -10 && lLat <= 10 && lLng >= 10 && lLng <= 30) {
+            return "Elaeis guineensis (African Oil Palm) / Dacryodes edulis";
+        }
+        return "Mangifera indica (Mango)";
+    };
+
+    const getSubtropicalRegionName = (lLat: number, lLng: number): string => {
+        if (lLat >= 30 && lLat <= 45 && lLng >= -10 && lLng <= 40) {
+            return "Mediterranean Basin Sclerophyll Zone";
+        }
+        if (lLat >= 32 && lLat <= 40 && lLng >= -125 && lLng <= -115) {
+            return "California Oak Woodland & Chaparral";
+        }
+        if (lLat <= -30 && lLat >= -35 && lLng >= 18 && lLng <= 28) {
+            return "South African Cape Fynbos Zone";
+        }
+        if (lLat <= -30 && lLat >= -37 && lLng >= -73 && lLng <= -70) {
+            return "Central Chilean Matorral Sclerophyll Zone";
+        }
+        if (lLat <= -30 && lLat >= -35 && lLng >= 115 && lLng <= 125) {
+            return "Southwest Australian Kwongan System";
+        }
+        return "Mediterranean Deciduous / Sclerophyll Forest";
+    };
+
+    const getSubtropicalOverstory = (lLat: number, lLng: number): string => {
+        if (lLat >= 30 && lLat <= 45 && lLng >= -10 && lLng <= 40) {
+            return "Olea europaea (Olive) / Quercus ilex";
+        }
+        if (lLat >= 32 && lLat <= 40 && lLng >= -125 && lLng <= -115) {
+            return "Quercus agrifolia (Coast Live Oak) / Umbellularia californica";
+        }
+        if (lLat <= -30 && lLat >= -35 && lLng >= 18 && lLng <= 28) {
+            return "Kiggelaria africana (Wild Peach) / Aspalathus linearis";
+        }
+        if (lLat <= -30 && lLat >= -37 && lLng >= -73 && lLng <= -70) {
+            return "Cryptocarya alba (Peumo) / Quillaja saponaria";
+        }
+        if (lLat <= -30 && lLat >= -35 && lLng >= 115 && lLng <= 125) {
+            return "Eucalyptus marginata (Jarrah) / Corymbia calophylla";
+        }
+        return "Olea europaea (Olive Tree)";
+    };
+
+    const getLocalPlants = () => {
+        if (ecology?.taxaDetails && ecology.taxaDetails.length > 0) {
+            return ecology.taxaDetails.filter((t: any) => {
+                const lowerCommon = (t.commonName || '').toLowerCase();
+                const isAnimal = lowerCommon.includes('fox') || 
+                                 lowerCommon.includes('camel') || 
+                                 lowerCommon.includes('lynx') || 
+                                 lowerCommon.includes('genet') || 
+                                 lowerCommon.includes('kangaroo') || 
+                                 lowerCommon.includes('emu') || 
+                                 lowerCommon.includes('deer') || 
+                                 lowerCommon.includes('roadrunner') || 
+                                 lowerCommon.includes('bustard') || 
+                                 lowerCommon.includes('oryx') || 
+                                 lowerCommon.includes('squirrel') ||
+                                 lowerCommon.includes('toucan') ||
+                                 lowerCommon.includes('jaguar');
+                return !isAnimal;
+            });
+        }
+        return [];
+    };
+    const localPlants = getLocalPlants();
+
+    const getGuildSpecies = (zone: 'Arid' | 'Tropical' | 'Temperate' | 'Subtropical') => {
+        const lp = localPlants;
+        
+        let overstoryDefault = "";
+        let understoryDefault = "";
+        let herbDefault = "";
+        let groundDefault = "";
+        
+        let overstoryRole = "";
+        let understoryRole = "";
+        let herbRole = "";
+        let groundRole = "";
+        
+        if (zone === 'Arid') {
+            overstoryDefault = aridRegion === 'Sahelian' ? "Adansonia digitata (African Baobab)" : "Olneya tesota (Desert Ironwood)";
+            understoryDefault = `${aridPioneer.name} (${aridPioneer.common})`;
+            herbDefault = "Moringa oleifera (Moringa)";
+            groundDefault = "Cajanus cajan (Pigeon Pea)";
+            
+            overstoryRole = "Deep taproots, shade, windbreak";
+            understoryRole = "Nitrogen fixation, soil stabilization";
+            herbRole = "High-protein biomass, mineral accumulation";
+            groundRole = "Root aeration, edible pea pods";
+        } else if (zone === 'Tropical') {
+            const tropOverstory = getTropicalOverstory(latVal, lngVal);
+            overstoryDefault = tropOverstory;
+            understoryDefault = "Musa acuminata (Grand Nain Banana)";
+            herbDefault = "Zingiber officinale (Ginger) / Turmeric";
+            groundDefault = "Vetiveria zizanioides (Vetiver Grass)";
+            
+            overstoryRole = "Upper shade canopy, seasonal fruit yield";
+            understoryRole = "Rapid nutrient cycling, water storage";
+            herbRole = "Valuable shade-tolerant cash crop";
+            groundRole = "Deep roots stabilizing contours and runoff";
+        } else if (zone === 'Temperate') {
+            const tempOverstory = getTemperateOverstory(latVal, lngVal, annualPrecip);
+            overstoryDefault = tempOverstory;
+            understoryDefault = "Ribes rubrum (Red Currant)";
+            herbDefault = "Symphytum officinale (Comfrey)";
+            groundDefault = "Trifolium repens (White Clover)";
+            
+            overstoryRole = "Deciduous fruit crop, solar-permeable winter canopy";
+            understoryRole = "Shade-tolerant berry yield, understory cycling";
+            herbRole = "Deep mining of potash, nutrient mulch accumulator";
+            groundRole = "Living green mulch, nitrogen fixation, pollinator lure";
+        } else {
+            const subOverstory = getSubtropicalOverstory(latVal, lngVal);
+            overstoryDefault = subOverstory;
+            understoryDefault = "Genista monspessulana (Spanish Broom)";
+            herbDefault = "Cynara cardunculus (Globe Artichoke)";
+            groundDefault = "Rosmarinus officinalis (Rosemary) / Lavandula";
+            
+            overstoryRole = "Drought-hardy oil and fruit crop, evergreen shade";
+            understoryRole = "Drought-hardy nitrogen fixing woody pioneer";
+            herbRole = "Deep roots mining minerals, broad organic leaf mulch";
+            groundRole = "Essential oils repelling pests, attracting honeybees";
+        }
+        
+        const species1 = lp[0] ? `${overstoryDefault} paired with native ${lp[0].commonName || lp[0].name} (${lp[0].name})` : overstoryDefault;
+        const species2 = lp[1] ? `${understoryDefault} paired with native ${lp[1].commonName || lp[1].name} (${lp[1].name})` : understoryDefault;
+        const species3 = lp[2] ? `${herbDefault} paired with native ${lp[2].commonName || lp[2].name} (${lp[2].name})` : herbDefault;
+        const species4 = lp[3] ? `${groundDefault} paired with native ${lp[3].commonName || lp[3].name} (${lp[3].name})` : groundDefault;
+        
+        return [
+            { layer: "1. Overstory Canopy", species: species1, role: overstoryRole },
+            { layer: "2. Shrub / Understory", species: species2, role: understoryRole },
+            { layer: "3. Herbaceous / Dynamic Accumulator", species: species3, role: herbRole },
+            { layer: "4. Groundcover / Nitrogen Fixer", species: species4, role: groundRole }
+        ];
+    };
+
     const aridRegion = getAridRegionName(latVal, lngVal);
     const aridWind = getAridWindName(latVal, lngVal);
     const aridPioneer = getAridPioneerTree(latVal, lngVal);
-
-    const precipVal = climate ? climate.precipitation : 1.2;
-    const tempVal = climate ? climate.temperature : 24.5;
-    const absLat = Math.abs(latVal);
-    const annualPrecip = precipVal * 365;
+    const tropicalRegion = getTropicalRegionName(latVal, lngVal);
+    const temperateRegion = getTemperateRegionName(latVal, lngVal, annualPrecip);
+    const subtropicalRegion = getSubtropicalRegionName(latVal, lngVal);
 
     let climateZone: 'Arid' | 'Tropical' | 'Temperate' | 'Subtropical' = 'Arid';
 
@@ -450,12 +702,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             plantGuildTitle: `${aridRegion} Syntropic Agroforestry Guild Design`,
             plantGuildIntro: `Designed to combat desertification and wind erosion in ${aridRegion.toLowerCase()} zones by pairing drought-resilient overstory species with fast-growing nitrogen fixers.`,
             plantGuildDescription: `The guild centers on the ${aridRegion === 'Sahelian' ? 'African Baobab' : 'Desert Ironwood'} and ${aridRegion === 'Sahelian' ? 'Umbrella Thorn Acacia' : 'Honey Mesquite'}. ${nativePlantsText} Moringa and Pigeon Pea produce continuous chop-and-drop biomass to rebuild soil organic matter, while marigolds protect the root zones.`,
-            guildSpecies: [
-                { layer: "1. Overstory Canopy", species: aridRegion === 'Sahelian' ? "Adansonia digitata (Baobab)" : "Olneya tesota (Desert Ironwood)", role: "Deep taproots, shade, windbreak" },
-                { layer: "2. Understory Nitrogen", species: aridPioneer.name + ` (${aridPioneer.common})`, role: "Nitrogen fixation, soil stabilization" },
-                { layer: "3. Chop-and-Drop Biomass", species: "Moringa oleifera (Moringa)", role: "High-protein biomass, mineral accumulation" },
-                { layer: "4. Herbaceous Companion", species: "Cajanus cajan (Pigeon Pea)", role: "Root aeration, edible pea pods" }
-            ],
+            guildSpecies: getGuildSpecies('Arid'),
             guildLowerHeading: "Musa 'Truly Tiny' (Nano Banana) Arid Guild Layout",
             guildLowerText: "The design details our dwarf banana guild adapted for dry regions. The central banana sits in a micro-catchment basin, insulated by sweet potato live-mulch to protect root moisture, and supported by comfrey and pigeon pea.",
             waterTitle: waterStrat.title,
@@ -490,16 +737,11 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             climateIntro: `The regional climate falls squarely within the ${aridRegion.toLowerCase()} zone, presenting seasonal water stresses. Meteorological telemetry indicates a seasonal precipitation curve, with dry periods dominated by the ${aridWind}.`
         },
         Tropical: {
-            zoneName: "Humid Tropical Forest System",
-            plantGuildTitle: "Humid Tropical Canopy Guild Design",
-            plantGuildIntro: "Designed for high-precipitation tropical environments, optimizing vertical space across multiple canopy layers and managing heavy weed competition.",
+            zoneName: tropicalRegion,
+            plantGuildTitle: `${tropicalRegion.split(' Forest')[0]} Canopy Guild Design`,
+            plantGuildIntro: `Designed for high-precipitation tropical environments in the ${tropicalRegion.toLowerCase()}, optimizing vertical space across multiple canopy layers and managing heavy weed competition.`,
             plantGuildDescription: `The guild features a fast-growing overstory of Mango or Avocado, understory bananas (Musa 'Grand Nain'), and a vigorous ground layer of Ginger, Turmeric, and Vetiver grass to prevent soil erosion. ${nativePlantsText}`,
-            guildSpecies: [
-                { layer: "1. Overstory Canopy", species: "Mangifera indica (Mango) / Avocado", role: "Upper shade canopy, seasonal fruit yield" },
-                { layer: "2. Understory Heavy Feeder", species: "Musa acuminata (Grand Nain Banana)", role: "Rapid nutrient cycling, water storage" },
-                { layer: "3. Herbaceous Layer", species: "Zingiber officinale (Ginger) / Turmeric", role: "Valuable shade-tolerant cash crop" },
-                { layer: "4. Groundcover & Erosion", species: "Vetiveria zizanioides (Vetiver Grass)", role: "Deep roots stabilizing contours and runoff" }
-            ],
+            guildSpecies: getGuildSpecies('Tropical'),
             guildLowerHeading: "Musa 'Grand Nain' Tropical Guild Layout",
             guildLowerText: "The central tropical banana plant is paired with sweet potato for complete soil coverage, ginger/turmeric for subsoil utilization, and vetiver grass on the downhill edge to arrest soil runoff.",
             waterTitle: waterStrat.title,
@@ -511,39 +753,34 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             swalesTitle: swaleStrat.title,
             swalesIntro: swaleStrat.intro,
             swalesSpecs: swaleStrat.specs,
-            zoningIntro: getZoningIntro("Concentric zoning in humid climates prioritizes ventilation and air circulation. Zone 1 gardens are raised to prevent root rot, while dense Zone 4 forestry buffers protect against tropical storms."),
+            zoningIntro: getZoningIntro(`Concentric zoning in humid climates of ${tropicalRegion.toLowerCase()} prioritizes ventilation and air circulation. Zone 1 gardens are raised to prevent root rot, while dense Zone 4 forestry buffers protect against tropical storms.`),
             conceptIntro: "The functional concept diagram illustrates the nutrient, waste, and energy flows across the property. Connections define how elements support each other: kitchen waste feeds Zone 1 compost piles, compost enriches Zone 1 raised beds, and graywater from Zone 0 houses hydrates Zone 2 agroforestry fruit guilds.",
-            soilStrategyTitle: "Tropical Soil Strategy",
+            soilStrategyTitle: `${tropicalRegion.split(' Forest')[0]} Soil Strategy`,
             soilStrategyIntro: getSoilStrategyIntro("Remediating tropical soils focuses on preventing nutrient leaching and managing acidic pH. Our primary strategy centers on heavy mulching with fast-decomposing organic matter, green manures, and moderate rock dust applications to replenish calcium and trace minerals."),
             soilCrops: "humid tropical crops",
             soilPhase2GreenCover: "Mucuna, velvet bean, and sweet potato groundcover",
-            soilTableTitle: "Tropical Soil Suitability & Recommendations",
+            soilTableTitle: `${tropicalRegion.split(' Forest')[0]} Soil Suitability & Recommendations`,
             soilDescriptionText: "High rainfall leads to rapid nutrient leaching and organic matter decomposition in tropical soils. Soil strategies must focus on heavy sheet mulching, cover cropping, and applying rock dust to stabilize soil pH and prevent nutrient runoff.",
             soilPhRecommendation: "Suitable. Fits tropical cultivars like Mango, Banana, and Ginger.",
             soilPhase1BiocharInput: "Bamboo or agricultural waste biochar activated with liquid compost",
             soilStrategyParagraph: "We combine biochar application with vigorous tropical cover crops like Velvet Bean (Mucuna pruriens) and Sweet Potato groundcover. These fast-growing species protect the soil from heavy monsoon rain erosion, outcompete weeds, and cycle nutrients rapidly.",
-            canopyIntro: "In the hot, high-humidity tropics, vertical canopy layers are engineered to intercept torrential rain and filter solar radiation. We deploy emergent fast-growing nitrogen-fixing legumes like *Albizia lebbeck* to protect lower productive tiers.",
+            canopyIntro: `In the hot, high-humidity tropics of the ${tropicalRegion.toLowerCase()}, vertical canopy layers are engineered to intercept torrential rain and filter solar radiation. We deploy emergent fast-growing nitrogen-fixing legumes like *Albizia lebbeck* to protect lower productive tiers.`,
             canopyDescription: "The emergent layer breaks the physical impact of heavy downpours, preventing soil compaction. Its high leaf volume provides continuous chop-and-drop mulch, while the deep roots recycle minerals from deep subsoil layers back into the system.",
-            canopyEmergentSpecies: "Albizia lebbeck (Woman's Tongue)",
+            canopyEmergentSpecies: getTropicalOverstory(latVal, lngVal).split(' / ')[0],
             canopyEmergentRole: "Heavy wind barrier, rapid nitrogen foliage cycle",
             canopyUnderstorySpecies: "Moringa oleifera (Moringa)",
             canopyUnderstoryRole: "Mulch-producer, mineral-accumulator understory",
-            faunaTitle: "Humid Tropical Wildlife Observations",
-            faunaIntro: "Local fauna observations in tropical zones indicate extreme biodiversity. iNaturalist records map active insect vectors, bird species, and canopy mammals occurring within a 5-kilometer radius of the property.",
-            scaleMapDetails: "standard Tropical forest boundary",
-            climateIntro: "The regional climate is humid-tropical, characterized by high annual precipitation and warm year-round temperatures. The precipitation curves show consistent moisture with intense seasonal monsoons and high relative humidity."
+            faunaTitle: `${tropicalRegion.split(' Forest')[0]} Wildlife Observations`,
+            faunaIntro: `Local fauna observations in tropical zones indicate extreme biodiversity. iNaturalist records map active insect vectors, bird species, and canopy mammals occurring within a 5-kilometer radius of the property in the ${tropicalRegion.toLowerCase()}.`,
+            scaleMapDetails: `standard ${tropicalRegion.toLowerCase()} boundary`,
+            climateIntro: `The regional climate is humid-tropical, characterized by high annual precipitation and warm year-round temperatures. The precipitation curves show consistent moisture with intense seasonal monsoons and high relative humidity.`
         },
         Temperate: {
-            zoneName: "Temperate Deciduous Forest System",
-            plantGuildTitle: "Temperate Apple & Comfrey Guild Design",
-            plantGuildIntro: "Designed for temperate climates to maximize solar gain, accumulate subsoil nutrients, and protect root zones from freezing winters.",
+            zoneName: temperateRegion,
+            plantGuildTitle: `${temperateRegion.split(' Forest')[0]} Apple & Comfrey Guild Design`,
+            plantGuildIntro: `Designed for temperate climates in the ${temperateRegion.toLowerCase()} to maximize solar gain, accumulate subsoil nutrients, and protect root zones from freezing winters.`,
             plantGuildDescription: `The guild centers on Apple or Pear trees, surrounded by clover to fix nitrogen, comfrey to mine subsoil minerals, marigolds to repel pests, and currants to yield berries in partial shade. ${nativePlantsText}`,
-            guildSpecies: [
-                { layer: "1. Overstory Canopy", species: "Malus domestica (Honeycrisp Apple)", role: "Deciduous fruit crop, solar-permeable winter canopy" },
-                { layer: "2. Shrub Layer", species: "Ribes rubrum (Red Currant)", role: "Shade-tolerant berry yield, understory cycling" },
-                { layer: "3. Dynamic Accumulator", species: "Symphytum officinale (Comfrey)", role: "Deep mining of potash, nutrient mulch accumulator" },
-                { layer: "4. Nitrogen Cover Crop", species: "Trifolium repens (White Clover)", role: "Living green mulch, nitrogen fixation, pollinator lure" }
-            ],
+            guildSpecies: getGuildSpecies('Temperate'),
             guildLowerHeading: "Malus domestica (Apple) Temperate Guild Layout",
             guildLowerText: "The central Apple tree is surrounded by a ring of Comfrey plants (cut back 3 times a season for mulch), white clover living mulch, and garlic chives to prevent fungal scab.",
             waterTitle: waterStrat.title,
@@ -555,39 +792,34 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             swalesTitle: swaleStrat.title,
             swalesIntro: swaleStrat.intro,
             swalesSpecs: swaleStrat.specs,
-            zoningIntro: getZoningIntro("Concentric zoning in temperate regions is shaped by the solar arc. Zone 1 gardens are placed on the south-facing slope of the house, while Zone 4 conifers form a northern windbreak."),
-            conceptIntro: "The functional bubble concept connects Zone 0 greywater to Zone 2 fruit orchards, and routes compost manure to Zone 1 beds, closing nutrient loops under high evaporation stress.",
-            soilStrategyTitle: "Temperate Soil Strategy",
+            zoningIntro: getZoningIntro(`Concentric zoning in temperate regions of ${temperateRegion.toLowerCase()} is shaped by the solar arc. Zone 1 gardens are placed on the south-facing slope of the house, while Zone 4 conifers form a northern windbreak.`),
+            conceptIntro: "The functional concept diagram illustrates the nutrient, waste, and energy flows across the property. Connections define how elements support each other: kitchen waste feeds Zone 1 compost piles, compost enriches Zone 1 raised beds, and graywater from Zone 0 houses hydrates Zone 2 agroforestry fruit guilds.",
+            soilStrategyTitle: `${temperateRegion.split(' Forest')[0]} Soil Strategy`,
             soilStrategyIntro: getSoilStrategyIntro("Building temperate soils centers on deep organic sheet mulching and protecting winter biology. We apply local woodchips and leaf mold to encourage mycorrhizal fungi, inoculation with native compost, and plant dense cover crops to hold nutrients."),
             soilCrops: "temperate crops",
             soilPhase2GreenCover: "White clover, hairy vetch, and winter rye",
-            soilTableTitle: "Temperate Soil Suitability & Recommendations",
+            soilTableTitle: `${temperateRegion.split(' Forest')[0]} Soil Suitability & Recommendations`,
             soilDescriptionText: "Temperate soils require protection against winter freezing and compaction. Soil strategies must focus on building a deep humic layer, applying composted leaf mold, and planting deep-rooting cover crops to aerate clay-heavy profiles.",
             soilPhRecommendation: "Favorable. Fits temperate orchard crops like Apple, Currant, and Clover.",
             soilPhase1BiocharInput: "Hardwood forest biochar activated with worm castings tea",
             soilStrategyParagraph: "We combine biochar application with cold-hardy cover crops like White Clover (Trifolium repens), Hairy Vetch (Vicia villosa), and Winter Rye. These species maintain soil cover over winter, fix nitrogen, and build organic matter as they decompose in spring.",
-            canopyIntro: "Temperate canopy design focuses on wind protection and solar access. We utilize deciduous overstory trees like *Quercus* or *Malus* to block cold winds in winter, while allowing early spring sun to reach the orchard floor before leaf-out.",
+            canopyIntro: `Temperate canopy design in the ${temperateRegion.toLowerCase()} focuses on wind protection and solar access. We utilize deciduous overstory trees like *Quercus* or *Malus* to block cold winds in winter, while allowing early spring sun to reach the orchard floor before leaf-out.`,
             canopyDescription: "The deciduous canopy provides solar-permeable shade during winter and spring, while dropping massive quantities of organic matter in autumn. This seasonal cycle builds deep forest humus and feeds the soil biology.",
-            canopyEmergentSpecies: "Quercus robur (English Oak)",
+            canopyEmergentSpecies: getTemperateOverstory(latVal, lngVal, annualPrecip).split(' / ')[0],
             canopyEmergentRole: "Deep microclimate windbreak, massive leaf drop humus",
             canopyUnderstorySpecies: "Ribes rubrum (Red Currant)",
             canopyUnderstoryRole: "Shade-tolerant sub-canopy berry accumulator",
-            faunaTitle: "Temperate Forest Wildlife Observations",
-            faunaIntro: "Local fauna observations in temperate zones reflect distinct seasonal migrations and hibernation cycles. iNaturalist records map woodland mammals, migratory birds, and insects within a 5-kilometer radius.",
-            scaleMapDetails: "standard Temperate forest boundary",
-            climateIntro: "The regional climate is temperate, characterized by four distinct seasons, moderate year-round precipitation, and freezing winter temperatures. The design buffers the site against cold winds and optimizes winter solar gain."
+            faunaTitle: `${temperateRegion.split(' Forest')[0]} Wildlife Observations`,
+            faunaIntro: `Local fauna observations in temperate zones reflect distinct seasonal migrations and hibernation cycles. iNaturalist records map woodland mammals, migratory birds, and insects within a 5-kilometer radius of the ${temperateRegion.toLowerCase()}.`,
+            scaleMapDetails: `standard ${temperateRegion.toLowerCase()} boundary`,
+            climateIntro: `The regional climate is temperate, characterized by four distinct seasons, moderate year-round precipitation, and freezing winter temperatures. The design buffers the site against cold winds and optimizes winter solar gain.`
         },
         Subtropical: {
-            zoneName: "Subtropical/Mediterranean Olive & Fig System",
-            plantGuildTitle: "Mediterranean Olive & Fig Guild Design",
-            plantGuildIntro: "Designed for winter-wet, summer-dry climates. Focuses on fire resilience, deep soil shading, and drought-tolerant companion plantings.",
+            zoneName: subtropicalRegion,
+            plantGuildTitle: `${subtropicalRegion.split(' Sclerophyll')[0]} Olive & Fig Guild Design`,
+            plantGuildIntro: `Designed for winter-wet, summer-dry climates of the ${subtropicalRegion.toLowerCase()}. Focuses on fire resilience, deep soil shading, and drought-tolerant companion plantings.`,
             plantGuildDescription: `The guild centers on Olive or Fig trees, supported by nitrogen-fixing Spanish Broom, dynamic accumulator artichokes, and aromatic pest barriers like rosemary, lavender, and thyme. ${nativePlantsText}`,
-            guildSpecies: [
-                { layer: "1. Overstory Canopy", species: "Olea europaea (Olive) / Ficus carica (Fig)", role: "Drought-hardy oil and fruit crop, evergreen shade" },
-                { layer: "2. Nitrogen Shrub", species: "Genista monspessulana (Spanish Broom)", role: "Drought-hardy nitrogen fixing woody pioneer" },
-                { layer: "3. Dynamic Accumulator", species: "Cynara cardunculus (Globe Artichoke)", role: "Deep roots mining minerals, broad organic leaf mulch" },
-                { layer: "4. Aromatic Pest Barrier", species: "Rosmarinus / Lavandula / Thyme", role: "Essential oils repelling pests, attracting honeybees" }
-            ],
+            guildSpecies: getGuildSpecies('Subtropical'),
             guildLowerHeading: "Olea europaea (Olive) Mediterranean Guild Layout",
             guildLowerText: "The central Olive tree is paired with globe artichoke for organic leaf mulch, spanish broom for nitrogen, and rosemary and thyme to create a pest-repelling ground ring.",
             waterTitle: waterStrat.title,
@@ -599,27 +831,27 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             swalesTitle: swaleStrat.title,
             swalesIntro: swaleStrat.intro,
             swalesSpecs: swaleStrat.specs,
-            zoningIntro: getZoningIntro("Concentric zoning focuses on fire safety and water efficiency. Zone 1 gardens are placed close to the house, while Zone 3 olives and figs act as a fire-resistant shelterbelt."),
-            conceptIntro: "The functional bubble concept connects kitchen greywater to sub-surface olive roots, and routes dry grass clippings to sheep paddocks in Zone 3.",
-            soilStrategyTitle: "Mediterranean Soil Strategy",
+            zoningIntro: getZoningIntro(`Concentric zoning in ${subtropicalRegion.toLowerCase()} focuses on fire safety and water efficiency. Zone 1 gardens are placed close to the house, while Zone 3 olives and figs act as a fire-resistant shelterbelt.`),
+            conceptIntro: "The functional concept diagram illustrates the nutrient, waste, and energy flows across the property. Connections define how elements support each other: kitchen waste feeds Zone 1 compost piles, compost enriches Zone 1 raised beds, and graywater from Zone 0 houses hydrates Zone 2 agroforestry fruit guilds.",
+            soilStrategyTitle: `${subtropicalRegion.split(' Sclerophyll')[0]} Soil Strategy`,
             soilStrategyIntro: getSoilStrategyIntro("Remediating Mediterranean soils focuses on moisture retention and building organic carbon. We apply composted woody mulch, inoculate with cover crop roots, and use biological biochar arrays to increase water retention during dry summers."),
             soilCrops: "drought-hardy Mediterranean crops",
             soilPhase2GreenCover: "Spanish broom, vetch, and subterranean clover",
-            soilTableTitle: "Mediterranean Soil Suitability & Recommendations",
+            soilTableTitle: `${subtropicalRegion.split(' Sclerophyll')[0]} Soil Suitability & Recommendations`,
             soilDescriptionText: "Mediterranean soils suffer from high evaporation and organic matter depletion during hot, dry summers. Soil strategies must focus on clay-humus complex stabilization, heavy woody mulching, and planting drought-hardy cover crops to protect soil biology.",
             soilPhRecommendation: "Excellent. Fits Mediterranean species like Olive, Fig, and Rosemary.",
             soilPhase1BiocharInput: "Olive wood pruning biochar activated with compost extract",
             soilStrategyParagraph: "We combine biochar application with drought-tolerant cover crops like Spanish Broom (Genista monspessulana), Vetch, and Subterranean Clover. These species establish quickly, build soil nitrogen, and form a resilient green mulch layer before the hot summer.",
-            canopyIntro: "Subtropical canopy shade engineering mitigates dry-summer heat and shields soil moisture. We utilize evergreen olive (*Olea europaea*) and deciduous fig (*Ficus carica*) to create a balanced dappled shade corridor.",
-            canopyDescription: "The canopy shields the understory from drying winds. The deep root structure extracts moisture from subsoil layers, maintaining cooler local temperatures and buffering the site against microclimatic extremes.",
-            canopyEmergentSpecies: "Olea europaea (Olive Tree)",
+            canopyIntro: `Subtropical canopy shade engineering in the ${subtropicalRegion.toLowerCase()} mitigates dry-summer heat and shields soil moisture. We utilize evergreen olive (*Olea europaea*) and deciduous fig (*Ficus carica*) to create a balanced dappled shade corridor.`,
+            canopyDescription: "The canopy shields the understory from drying winds. The root structure extracts moisture from subsoil layers, maintaining cooler local temperatures and buffering the site against microclimatic extremes.",
+            canopyEmergentSpecies: getSubtropicalOverstory(latVal, lngVal).split(' / ')[0],
             canopyEmergentRole: "Evergreen microclimatic windshield, deep taproots",
             canopyUnderstorySpecies: "Ficus carica (Common Fig)",
             canopyUnderstoryRole: "Broad-leaf soil shading, deciduous leaf mulcher",
-            faunaTitle: "Mediterranean Wildlife Observations",
-            faunaIntro: "Local fauna observations in Mediterranean/Subtropical zones show adaptation to hot summers and dry grasslands. iNaturalist records capture native birds, reptiles, and insects occurring within a 5-kilometer radius.",
-            scaleMapDetails: "standard Mediterranean forest boundary",
-            climateIntro: "The regional climate is Mediterranean/Subtropical, characterized by hot, dry summers and mild, wet winters. Water management is designed to store heavy winter rain to support production during the dry summer."
+            faunaTitle: `${subtropicalRegion.split(' Sclerophyll')[0]} Wildlife Observations`,
+            faunaIntro: `Local fauna observations in Mediterranean/Subtropical zones show adaptation to hot summers and dry grasslands. iNaturalist records capture native birds, reptiles, and insects occurring within a 5-kilometer radius of the ${subtropicalRegion.toLowerCase()}.`,
+            scaleMapDetails: `standard ${subtropicalRegion.toLowerCase()} boundary`,
+            climateIntro: `The regional climate is Mediterranean/Subtropical, characterized by hot, dry summers and mild, wet winters. Water management is designed to store heavy winter rain to support production during the dry summer.`
         }
     };
 
