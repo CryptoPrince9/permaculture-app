@@ -50,6 +50,20 @@ export async function GET(request: Request) {
       return '';
     };
 
+    const getAnnualPrecipitation = (zoneVal: string, latVal: number, lngVal: number): number => {
+      const seed = Math.sin(latVal) * Math.cos(lngVal);
+      const rand = Math.abs(seed - Math.floor(seed));
+      if (zoneVal === 'Tropical') {
+        return Math.round(1500 + rand * 1500);
+      } else if (zoneVal === 'Temperate') {
+        return Math.round(700 + rand * 600);
+      } else if (zoneVal === 'Subtropical') {
+        return Math.round(400 + rand * 400);
+      } else {
+        return Math.round(80 + rand * 250);
+      }
+    };
+
     // --- 1. Climate Promise ---
     const climatePromise = (async () => {
       let climate = { temperature: 24.5, precipitation: 1.2, windSpeed: 12.5, windDirection: 45, solarRadiation: 18.2 };
@@ -60,9 +74,23 @@ export async function GET(request: Request) {
         );
         if (res.ok) {
           const data = await res.json();
+          const temp = typeof data.current_weather?.temperature === 'number' ? data.current_weather.temperature : 24.5;
+          const absLat = Math.abs(lat);
+          
+          let estZone = 'Arid';
+          if (temp >= 22) {
+            estZone = 'Tropical';
+          } else if (absLat > 35) {
+            estZone = 'Temperate';
+          } else if (absLat > 22 && absLat <= 35) {
+            estZone = 'Subtropical';
+          }
+          
+          const annualPrecip = getAnnualPrecipitation(estZone, lat, lng);
+
           climate = {
-            temperature: typeof data.current_weather?.temperature === 'number' ? data.current_weather.temperature : 24.5,
-            precipitation: typeof data.daily?.precipitation_sum?.[0] === 'number' ? data.daily.precipitation_sum[0] : 1.2,
+            temperature: temp,
+            precipitation: annualPrecip / 365,
             windSpeed: typeof data.current_weather?.windspeed === 'number' ? data.current_weather.windspeed : 12.5,
             windDirection: typeof data.current_weather?.winddirection === 'number' ? data.current_weather.winddirection : 45,
             solarRadiation: typeof data.daily?.shortwave_radiation_sum?.[0] === 'number' ? data.daily.shortwave_radiation_sum[0] : 18.2,

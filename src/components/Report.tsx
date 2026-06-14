@@ -187,7 +187,39 @@ export default function Report({ location, boundaryCoords, userData, config }: R
           const isArabian = latVal >= 15 && latVal <= 35 && lngVal >= 30 && lngVal <= 60;
 
           let zoneName = "Sahelian";
-          let fallbackClimate = { temperature: 24.5, precipitation: 1.2, windSpeed: 12.5, windDirection: 45, solarRadiation: 18.2 };
+          if (isSonoran) {
+            zoneName = "Sonoran";
+          } else if (isAustralian) {
+            zoneName = "Australian";
+          } else if (isArabian) {
+            zoneName = "Arabian";
+          } else if (absLat > 35) {
+            zoneName = "Temperate";
+          } else if (absLat > 22 && absLat <= 35) {
+            zoneName = "Mediterranean/Subtropical";
+          } else if (absLat < 10) {
+            zoneName = "Tropical";
+          }
+
+          const getAnnualPrecip = (zName: string, lt: number, lg: number) => {
+            const seed = Math.sin(lt) * Math.cos(lg);
+            const rand = Math.abs(seed - Math.floor(seed));
+            if (zName === 'Tropical') return Math.round(1500 + rand * 1500);
+            if (zName === 'Temperate') return Math.round(700 + rand * 600);
+            if (zName === 'Mediterranean/Subtropical') return Math.round(400 + rand * 400);
+            return Math.round(80 + rand * 250); // Sahelian, Sonoran, Australian, Arabian
+          };
+
+          const annualPrecip = getAnnualPrecip(zoneName, latVal, lngVal);
+
+          let fallbackClimate = { 
+            temperature: zoneName === 'Tropical' ? 27.2 : zoneName === 'Temperate' ? 14.2 : zoneName === 'Mediterranean/Subtropical' ? 19.5 : 24.5, 
+            precipitation: annualPrecip / 365, 
+            windSpeed: zoneName === 'Tropical' ? 8.0 : zoneName === 'Temperate' ? 15.0 : zoneName === 'Mediterranean/Subtropical' ? 10.5 : 12.5, 
+            windDirection: zoneName === 'Tropical' ? 90 : zoneName === 'Temperate' ? 270 : zoneName === 'Mediterranean/Subtropical' ? 225 : 45, 
+            solarRadiation: zoneName === 'Tropical' ? 22.0 : zoneName === 'Temperate' ? 12.5 : zoneName === 'Mediterranean/Subtropical' ? 16.8 : 18.2 
+          };
+
           let fallbackEcology = { 
             taxa: ['Acacia tortilis', 'Adansonia digitata', 'Vulpes zerda', 'Camelus dromedarius'],
             taxaDetails: [
@@ -233,7 +265,7 @@ export default function Report({ location, boundaryCoords, userData, config }: R
             };
           } else if (absLat > 35) {
             zoneName = "Temperate";
-            fallbackClimate = { temperature: 14.2, precipitation: 2.1, windSpeed: 15.0, windDirection: 270, solarRadiation: 12.5 };
+            fallbackClimate = { temperature: 14.2, precipitation: annualPrecip / 365, windSpeed: 15.0, windDirection: 270, solarRadiation: 12.5 };
             fallbackEcology = {
               taxa: ['Malus domestica', 'Symphytum officinale', 'Vulpes vulpes', 'Sciurus carolinensis'],
               taxaDetails: [
@@ -245,7 +277,7 @@ export default function Report({ location, boundaryCoords, userData, config }: R
             };
           } else if (absLat > 22 && absLat <= 35) {
             zoneName = "Mediterranean/Subtropical";
-            fallbackClimate = { temperature: 19.5, precipitation: 1.8, windSpeed: 10.5, windDirection: 225, solarRadiation: 16.8 };
+            fallbackClimate = { temperature: 19.5, precipitation: annualPrecip / 365, windSpeed: 10.5, windDirection: 225, solarRadiation: 16.8 };
             fallbackEcology = {
               taxa: ['Olea europaea', 'Ficus carica', 'Lynx pardinus', 'Genetta genetta'],
               taxaDetails: [
@@ -257,7 +289,7 @@ export default function Report({ location, boundaryCoords, userData, config }: R
             };
           } else if (absLat < 10) {
             zoneName = "Tropical";
-            fallbackClimate = { temperature: 27.2, precipitation: 5.5, windSpeed: 8.0, windDirection: 90, solarRadiation: 22.0 };
+            fallbackClimate = { temperature: 27.2, precipitation: annualPrecip / 365, windSpeed: 8.0, windDirection: 90, solarRadiation: 22.0 };
             fallbackEcology = {
               taxa: ['Mangifera indica', 'Persea americana', 'Panthera onca', 'Ramphastos toco'],
               taxaDetails: [

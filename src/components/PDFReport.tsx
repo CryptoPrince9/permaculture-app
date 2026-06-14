@@ -343,13 +343,113 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             climateZone = 'Tropical';
         }
     }
+    const windDir = climate ? climate.windDirection : 45;
+    const windSpd = climate ? climate.windSpeed : 12.5;
+    const windDirectionName = getWindDirectionName(windDir);
+
+    // Dynamic water strategy
+    const potential = annualPrecip * 100; // 100m² roof
+    const cistern = Math.max(5000, Math.round((potential * 0.25) / 1000) * 1000);
+    const waterStrat = {
+        title: `${climateZone === 'Arid' ? aridRegion : climateZone === 'Tropical' ? 'Tropical Monsoon' : climateZone === 'Temperate' ? 'Temperate Keyline' : 'Mediterranean'} Catchment & Cistern Loop`,
+        intro: `Rainwater calculations are calibrated for the local annual rainfall of ${annualPrecip.toFixed(0)}mm. A 100m² roof collects up to ${potential.toLocaleString()}L annually. Routing this runoff through a first-flush diverter to a ${cistern.toLocaleString()}L cistern ensures sufficient dry-season irrigation reserve.`,
+        specs: `${cistern.toLocaleString()}L CISTERN + FIRST-FLUSH BYPASS`
+    };
+
+    // Dynamic irrigation strategy
+    const getIrrigationStrategy = () => {
+        if (annualPrecip < 350) {
+            return {
+                title: "Clay Ollas & Deep Gravel/Stone Mulch",
+                intro: `With a critically low annual rainfall of ${annualPrecip.toFixed(0)}mm, standard drip lines are inefficient due to high evaporation. Instead, we deploy porous clay Ollas (buried irrigation pots) paired with local volcanic stone or gravel mulching around tree root zones to minimize evaporation and maintain soil moisture.`,
+                specs: "CLAY OLLA POTS + GRAVEL THERMAL SHIELD"
+            };
+        } else if (annualPrecip >= 800) {
+            return {
+                title: "Sub-Surface Drip & Straw Compost Sponge",
+                intro: `Given the high local rainfall of ${annualPrecip.toFixed(0)}mm, active irrigation is only needed during brief dry spells. We focus on a sub-surface drip array beneath a thick 15cm organic woodchip and straw compost sponge to maintain soil biology and prevent surface runoff.`,
+                specs: "SUB-SURFACE DRIP + 15CM COMPOST SPONGE"
+            };
+        } else {
+            return {
+                title: "Gravity-Fed Drip & Stone-Lined Basins",
+                intro: `With a moderate rainfall of ${annualPrecip.toFixed(0)}mm, we distribute stored cistern water using a low-pressure gravity drip line. Companion planting zones are shaped as shallow, stone-lined infiltration basins to trap early morning dew and runoff.`,
+                specs: "GRAVITY-FED DRIP + STONE MULCH SHIELD"
+            };
+        }
+    };
+    const dripStrat = getIrrigationStrategy();
+
+    // Dynamic swale strategy
+    const slopeVal = elevation ? elevation.slope : 1.2;
+    const getSwaleStrategy = () => {
+        if (slopeVal > 8) {
+            return {
+                title: "Terraced Retaining Walls & Stone-Reinforced Drains",
+                intro: `The site's steep slope of ${slopeVal.toFixed(1)}% presents a high risk of soil erosion. Standard swales are unsafe here. Instead, we design narrow, stone-reinforced terraces with backfilled organic contour drains to stabilize the hillside and slow down torrential flows.`,
+                specs: "STONE-REINFORCED RETAINING TERRACES"
+            };
+        } else if (slopeVal < 2) {
+            return {
+                title: "Level Infiltration Basins & Woodchip Sponges",
+                intro: `Since the site is nearly flat (slope: ${slopeVal.toFixed(1)}%), standard contour swales are ineffective as water does not flow along gradients. Instead, we excavate wide, shallow level infiltration basins and sheet-mulch the area with woodchips to create a massive horizontal sponge.`,
+                specs: "LEVEL INFILTRATION BASINS + SHEET MULCH"
+            };
+        } else {
+            return {
+                title: "Contour Infiltration Swales & Overflow Ponds",
+                intro: `The moderate slope of ${slopeVal.toFixed(1)}% is ideal for passive keyline water harvesting. We dig level swales along the contour, backfilled with compost and woodchips to act as underground sponges. Swales overflow safely into a lower storage pond.`,
+                specs: "CONTOUR INFILTRATION SWALES + OVERFLOW POND"
+            };
+        }
+    };
+    const swaleStrat = getSwaleStrategy();
+
+    // Native plant description generator
+    const getNativePlantText = () => {
+        if (ecology?.taxaDetails && ecology.taxaDetails.length > 0) {
+            const plants = ecology.taxaDetails.filter((t: any) => {
+                const lowerCommon = (t.commonName || '').toLowerCase();
+                return !lowerCommon.includes('fox') && 
+                       !lowerCommon.includes('camel') && 
+                       !lowerCommon.includes('lynx') && 
+                       !lowerCommon.includes('genet') && 
+                       !lowerCommon.includes('kangaroo') && 
+                       !lowerCommon.includes('emu') && 
+                       !lowerCommon.includes('deer') && 
+                       !lowerCommon.includes('roadrunner') && 
+                       !lowerCommon.includes('bustard') && 
+                       !lowerCommon.includes('oryx') && 
+                       !lowerCommon.includes('squirrel') &&
+                       !lowerCommon.includes('toucan') &&
+                       !lowerCommon.includes('jaguar');
+            });
+            if (plants.length > 0) {
+                const plantNames = plants.slice(0, 2).map((p: any) => `${p.commonName || p.name} (${p.name})`);
+                return `Specifically, the native flora observed locally includes ${plantNames.join(' and ')}. These native species form the resilient foundation of our guilds, acting as windbreaks and nutrient cycling anchors.`;
+            }
+        }
+        return "We establish native pioneer species as the resilient foundation of our guilds, acting as windbreaks and nutrient cycling anchors.";
+    };
+    const nativePlantsText = getNativePlantText();
+
+    const getZoningIntro = (original: string) => {
+        return `${original} Telemetry indicates a local wind speed of ${windSpd.toFixed(1)} km/h blowing from the ${windDirectionName}, necessitating strategic shelterbelts placed in Zone 4 on the windward boundary to buffer tender Zone 1 annuals.`;
+    };
+
+    const getSoilStrategyIntro = (original: string) => {
+        const phVal = soil ? soil.ph : 6.8;
+        const carbonVal = soil ? soil.organicCarbon : 4.5;
+        const phStatus = phVal < 6 ? "acidic" : phVal > 7.5 ? "alkaline" : "optimal neutral";
+        return `With a measured soil pH of ${phVal.toFixed(1)} (${phStatus}) and critically low Soil Organic Carbon at ${carbonVal.toFixed(1)} g/kg, soil rebuilding is our first priority. ${original}`;
+    };
 
     const designConfig = {
         Arid: {
             zoneName: `${aridRegion} Dryland System`,
             plantGuildTitle: `${aridRegion} Syntropic Agroforestry Guild Design`,
             plantGuildIntro: `Designed to combat desertification and wind erosion in ${aridRegion.toLowerCase()} zones by pairing drought-resilient overstory species with fast-growing nitrogen fixers.`,
-            plantGuildDescription: `The guild centers on the ${aridRegion === 'Sahelian' ? 'African Baobab' : 'Desert Ironwood'} and ${aridRegion === 'Sahelian' ? 'Umbrella Thorn Acacia' : 'Honey Mesquite'}, which create windbreaks and light shade filters. Moringa and Pigeon Pea produce continuous chop-and-drop biomass to rebuild soil organic matter, while marigolds protect the root zones.`,
+            plantGuildDescription: `The guild centers on the ${aridRegion === 'Sahelian' ? 'African Baobab' : 'Desert Ironwood'} and ${aridRegion === 'Sahelian' ? 'Umbrella Thorn Acacia' : 'Honey Mesquite'}. ${nativePlantsText} Moringa and Pigeon Pea produce continuous chop-and-drop biomass to rebuild soil organic matter, while marigolds protect the root zones.`,
             guildSpecies: [
                 { layer: "1. Overstory Canopy", species: aridRegion === 'Sahelian' ? "Adansonia digitata (Baobab)" : "Olneya tesota (Desert Ironwood)", role: "Deep taproots, shade, windbreak" },
                 { layer: "2. Understory Nitrogen", species: aridPioneer.name + ` (${aridPioneer.common})`, role: "Nitrogen fixation, soil stabilization" },
@@ -358,19 +458,19 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             ],
             guildLowerHeading: "Musa 'Truly Tiny' (Nano Banana) Arid Guild Layout",
             guildLowerText: "The design details our dwarf banana guild adapted for dry regions. The central banana sits in a micro-catchment basin, insulated by sweet potato live-mulch to protect root moisture, and supported by comfrey and pigeon pea.",
-            waterTitle: `${aridRegion} Rainwater Harvesting & Cistern Loop`,
-            waterIntro: `Rainwater calculations are calibrated for the seasonal storm patterns of ${aridRegion.toLowerCase()} regions. Gutters channel runoff through a first-flush diverter to a 20,000L cistern.`,
-            waterSpecs: "FIRST-FLUSH DIVERTER + 20,000L CISTERN STORAGE",
-            dripTitle: `${aridRegion} Gravity-Fed Drip & Buried Ollas`,
-            dripIntro: "Distributes stored water via a low-pressure drip line coupled with porous clay Ollas. Ollas are buried next to trees, seeping water directly to root zones with zero evaporation.",
-            dripSpecs: "GRAVITY-FED Drip + BURIED CLAY OLLAS",
-            swalesTitle: "Contour Swales & Micro-Catchment Trenches",
-            swalesIntro: "Level swales capture high-volume flash runoff. Swale beds are backfilled with organic matter to act as underground sponges, keeping trees hydrated through dry seasons.",
-            swalesSpecs: "INFILTRATION CONTOUR SWALES + STORAGE POND",
-            zoningIntro: `Concentric zoning in ${aridRegion.toLowerCase()} areas centers around Zone 0 to provide windbreaks and thermal shading. Zone 1 kitchen gardens are placed on the eastern side to capture morning sun while avoiding harsh afternoon rays.`,
+            waterTitle: waterStrat.title,
+            waterIntro: waterStrat.intro,
+            waterSpecs: waterStrat.specs,
+            dripTitle: dripStrat.title,
+            dripIntro: dripStrat.intro,
+            dripSpecs: dripStrat.specs,
+            swalesTitle: swaleStrat.title,
+            swalesIntro: swaleStrat.intro,
+            swalesSpecs: swaleStrat.specs,
+            zoningIntro: getZoningIntro(`Concentric zoning in ${aridRegion.toLowerCase()} areas centers around Zone 0 to provide windbreaks and thermal shading. Zone 1 kitchen gardens are placed on the eastern side to capture morning sun while avoiding harsh afternoon rays.`),
             conceptIntro: `The functional bubble concept connects Zone 0 greywater to Zone 2 fruit orchards, and routes compost manure to Zone 1 beds, closing nutrient loops under high evaporation stress.`,
             soilStrategyTitle: `${aridRegion} Soil Strategy`,
-            soilStrategyIntro: `Rebuilding degraded soils in dry regions requires active biological remediation. Our primary strategy centers on the application of biochar (pyrolyzed crop waste), which is inoculated with nutrient-rich compost teas and animal manure to create highly porous carbon sinks that house beneficial soil microorganisms.`,
+            soilStrategyIntro: getSoilStrategyIntro(`Rebuilding degraded soils in dry regions requires active biological remediation. Our primary strategy centers on the application of biochar (pyrolyzed crop waste), which is inoculated with nutrient-rich compost teas and animal manure to create highly porous carbon sinks that house beneficial soil microorganisms.`),
             soilCrops: "arid-adapted crops",
             soilPhase2GreenCover: "Pigeon pea and cowpea understory guilds",
             soilTableTitle: `${aridRegion} Soil Suitability & Recommendations`,
@@ -393,7 +493,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             zoneName: "Humid Tropical Forest System",
             plantGuildTitle: "Humid Tropical Canopy Guild Design",
             plantGuildIntro: "Designed for high-precipitation tropical environments, optimizing vertical space across multiple canopy layers and managing heavy weed competition.",
-            plantGuildDescription: "The guild features a fast-growing overstory of Mango or Avocado, understory bananas (Musa 'Grand Nain'), and a vigorous ground layer of Ginger, Turmeric, and Vetiver grass to prevent soil erosion.",
+            plantGuildDescription: `The guild features a fast-growing overstory of Mango or Avocado, understory bananas (Musa 'Grand Nain'), and a vigorous ground layer of Ginger, Turmeric, and Vetiver grass to prevent soil erosion. ${nativePlantsText}`,
             guildSpecies: [
                 { layer: "1. Overstory Canopy", species: "Mangifera indica (Mango) / Avocado", role: "Upper shade canopy, seasonal fruit yield" },
                 { layer: "2. Understory Heavy Feeder", species: "Musa acuminata (Grand Nain Banana)", role: "Rapid nutrient cycling, water storage" },
@@ -402,19 +502,19 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             ],
             guildLowerHeading: "Musa 'Grand Nain' Tropical Guild Layout",
             guildLowerText: "The central tropical banana plant is paired with sweet potato for complete soil coverage, ginger/turmeric for subsoil utilization, and vetiver grass on the downhill edge to arrest soil runoff.",
-            waterTitle: "Tropical Runoff Management & Rain Gardens",
-            waterIntro: "Rainwater systems focus on drainage and overflow safety. Catchment piping directs excess roof runoff away from structures into bio-retention swales and rain gardens.",
-            waterSpecs: "SEDIMENTATION BASINS + BIO-RETENTION BYPASS",
-            dripTitle: "Sub-Surface Drainage & Passive Hydration",
-            dripIntro: "Irrigation is primarily passive. Sub-surface drainage channels divert standing water from Zone 1 to Zone 3 timber blocks, maintaining soil aeration during wet season peaks.",
-            dripSpecs: "SUB-SURFACE DRAINAGE + PASSIVE RAIN GRADIENTS",
-            swalesTitle: "Vetiver Grass Contours & Drainage Swales",
-            swalesIntro: "Swales are designed with a slight grade (0.5%) to slowly drain excess water into natural waterways, preventing waterlogging and anaerobic root conditions.",
-            swalesSpecs: "DRAINAGE CONTOURS + VETIVER SOIL BINDERS",
-            zoningIntro: "Concentric zoning in humid climates prioritizes ventilation and air circulation. Zone 1 gardens are raised to prevent root rot, while dense Zone 4 forestry buffers protect against tropical storms.",
+            waterTitle: waterStrat.title,
+            waterIntro: waterStrat.intro,
+            waterSpecs: waterStrat.specs,
+            dripTitle: dripStrat.title,
+            dripIntro: dripStrat.intro,
+            dripSpecs: dripStrat.specs,
+            swalesTitle: swaleStrat.title,
+            swalesIntro: swaleStrat.intro,
+            swalesSpecs: swaleStrat.specs,
+            zoningIntro: getZoningIntro("Concentric zoning in humid climates prioritizes ventilation and air circulation. Zone 1 gardens are raised to prevent root rot, while dense Zone 4 forestry buffers protect against tropical storms."),
             conceptIntro: "The functional concept diagram illustrates the nutrient, waste, and energy flows across the property. Connections define how elements support each other: kitchen waste feeds Zone 1 compost piles, compost enriches Zone 1 raised beds, and graywater from Zone 0 houses hydrates Zone 2 agroforestry fruit guilds.",
             soilStrategyTitle: "Tropical Soil Strategy",
-            soilStrategyIntro: "Remediating tropical soils focuses on preventing nutrient leaching and managing acidic pH. Our primary strategy centers on heavy mulching with fast-decomposing organic matter, green manures, and moderate rock dust applications to replenish calcium and trace minerals.",
+            soilStrategyIntro: getSoilStrategyIntro("Remediating tropical soils focuses on preventing nutrient leaching and managing acidic pH. Our primary strategy centers on heavy mulching with fast-decomposing organic matter, green manures, and moderate rock dust applications to replenish calcium and trace minerals."),
             soilCrops: "humid tropical crops",
             soilPhase2GreenCover: "Mucuna, velvet bean, and sweet potato groundcover",
             soilTableTitle: "Tropical Soil Suitability & Recommendations",
@@ -437,7 +537,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             zoneName: "Temperate Deciduous Forest System",
             plantGuildTitle: "Temperate Apple & Comfrey Guild Design",
             plantGuildIntro: "Designed for temperate climates to maximize solar gain, accumulate subsoil nutrients, and protect root zones from freezing winters.",
-            plantGuildDescription: "The guild centers on Apple or Pear trees, surrounded by clover to fix nitrogen, comfrey to mine subsoil minerals, marigolds to repel pests, and currants to yield berries in partial shade.",
+            plantGuildDescription: `The guild centers on Apple or Pear trees, surrounded by clover to fix nitrogen, comfrey to mine subsoil minerals, marigolds to repel pests, and currants to yield berries in partial shade. ${nativePlantsText}`,
             guildSpecies: [
                 { layer: "1. Overstory Canopy", species: "Malus domestica (Honeycrisp Apple)", role: "Deciduous fruit crop, solar-permeable winter canopy" },
                 { layer: "2. Shrub Layer", species: "Ribes rubrum (Red Currant)", role: "Shade-tolerant berry yield, understory cycling" },
@@ -446,19 +546,19 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             ],
             guildLowerHeading: "Malus domestica (Apple) Temperate Guild Layout",
             guildLowerText: "The central Apple tree is surrounded by a ring of Comfrey plants (cut back 3 times a season for mulch), white clover living mulch, and garlic chives to prevent fungal scab.",
-            waterTitle: "Temperate Keyline Dams & Swale Networks",
-            waterIntro: "Calibrated for steady year-round rain. Runoff is captured in series ponds that store heat energy, acting as thermal mass to buffer local temperature drops.",
-            waterSpecs: "THERMAL MASS PONDS + DETENTION SWALES",
-            dripTitle: "Standard Gravity-Fed Drip & Straw Mulch",
-            dripIntro: "Distributes water through high-durability drip lines laid under a thick layer of straw or woodchip mulch, reducing evaporation and feeding soil fungi.",
-            dripSpecs: "GRAVITY-FED DRIP + HEAVY WOODCHIP MULCH",
-            swalesTitle: "Contour Swales & Keyline Diversion Drains",
-            swalesIntro: "Level swales are placed on keyline contours to spread water from valley pockets out to dry ridges, maximizing soil hydration across the entire slope.",
-            swalesSpecs: "KEYLINE SWALES + COLD-SEASON BYPASS PONDS",
-            zoningIntro: "Concentric zoning in temperate regions is shaped by the solar arc. Zone 1 gardens are placed on the south-facing slope of the house, while Zone 4 conifers form a northern windbreak.",
+            waterTitle: waterStrat.title,
+            waterIntro: waterStrat.intro,
+            waterSpecs: waterStrat.specs,
+            dripTitle: dripStrat.title,
+            dripIntro: dripStrat.intro,
+            dripSpecs: dripStrat.specs,
+            swalesTitle: swaleStrat.title,
+            swalesIntro: swaleStrat.intro,
+            swalesSpecs: swaleStrat.specs,
+            zoningIntro: getZoningIntro("Concentric zoning in temperate regions is shaped by the solar arc. Zone 1 gardens are placed on the south-facing slope of the house, while Zone 4 conifers form a northern windbreak."),
             conceptIntro: "The functional bubble concept connects Zone 0 greywater to Zone 2 fruit orchards, and routes compost manure to Zone 1 beds, closing nutrient loops under high evaporation stress.",
             soilStrategyTitle: "Temperate Soil Strategy",
-            soilStrategyIntro: "Building temperate soils centers on deep organic sheet mulching and protecting winter biology. We apply local woodchips and leaf mold to encourage mycorrhizal fungi, inoculation with native compost, and plant dense cover crops to hold nutrients.",
+            soilStrategyIntro: getSoilStrategyIntro("Building temperate soils centers on deep organic sheet mulching and protecting winter biology. We apply local woodchips and leaf mold to encourage mycorrhizal fungi, inoculation with native compost, and plant dense cover crops to hold nutrients."),
             soilCrops: "temperate crops",
             soilPhase2GreenCover: "White clover, hairy vetch, and winter rye",
             soilTableTitle: "Temperate Soil Suitability & Recommendations",
@@ -481,7 +581,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             zoneName: "Subtropical/Mediterranean Olive & Fig System",
             plantGuildTitle: "Mediterranean Olive & Fig Guild Design",
             plantGuildIntro: "Designed for winter-wet, summer-dry climates. Focuses on fire resilience, deep soil shading, and drought-tolerant companion plantings.",
-            plantGuildDescription: "The guild centers on Olive or Fig trees, supported by nitrogen-fixing Spanish Broom, dynamic accumulator artichokes, and aromatic pest barriers like rosemary, lavender, and thyme.",
+            plantGuildDescription: `The guild centers on Olive or Fig trees, supported by nitrogen-fixing Spanish Broom, dynamic accumulator artichokes, and aromatic pest barriers like rosemary, lavender, and thyme. ${nativePlantsText}`,
             guildSpecies: [
                 { layer: "1. Overstory Canopy", species: "Olea europaea (Olive) / Ficus carica (Fig)", role: "Drought-hardy oil and fruit crop, evergreen shade" },
                 { layer: "2. Nitrogen Shrub", species: "Genista monspessulana (Spanish Broom)", role: "Drought-hardy nitrogen fixing woody pioneer" },
@@ -490,19 +590,19 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
             ],
             guildLowerHeading: "Olea europaea (Olive) Mediterranean Guild Layout",
             guildLowerText: "The central Olive tree is paired with globe artichoke for organic leaf mulch, spanish broom for nitrogen, and rosemary and thyme to create a pest-repelling ground ring.",
-            waterTitle: "Mediterranean Terraces & Cistern Storage",
-            waterIntro: "Calibrated for wet winters and dry summers. Rainwater is harvested from roofs during winter and stored in cisterns to irrigate through dry summer months.",
-            waterSpecs: "WINTER CISTERN STORAGE + PASSIVE SOIL SPONGES",
-            dripTitle: "Standard Drip & Stone Mulching",
-            dripIntro: "Uses drip lines coupled with heavy stone mulch. Stacking flat stones around the root zone cools the soil and condenses morning dew, adding passive hydration.",
-            dripSpecs: "GRAVITY DRIP + STONE THERMAL CONDENSERS",
-            swalesTitle: "Terraced Swales & Stone-Lined Trenches",
-            swalesIntro: "On sloped Mediterranean land, swales are reinforced with stone walls. This creates stable terraces that slow down winter torrents and prevent mudslides.",
-            swalesSpecs: "STONE-REINFORCED SWALES + COLD-WATER PONDS",
-            zoningIntro: "Concentric zoning focuses on fire safety and water efficiency. Zone 1 gardens are placed close to the house, while Zone 3 olives and figs act as a fire-resistant shelterbelt.",
+            waterTitle: waterStrat.title,
+            waterIntro: waterStrat.intro,
+            waterSpecs: waterStrat.specs,
+            dripTitle: dripStrat.title,
+            dripIntro: dripStrat.intro,
+            dripSpecs: dripStrat.specs,
+            swalesTitle: swaleStrat.title,
+            swalesIntro: swaleStrat.intro,
+            swalesSpecs: swaleStrat.specs,
+            zoningIntro: getZoningIntro("Concentric zoning focuses on fire safety and water efficiency. Zone 1 gardens are placed close to the house, while Zone 3 olives and figs act as a fire-resistant shelterbelt."),
             conceptIntro: "The functional bubble concept connects kitchen greywater to sub-surface olive roots, and routes dry grass clippings to sheep paddocks in Zone 3.",
             soilStrategyTitle: "Mediterranean Soil Strategy",
-            soilStrategyIntro: "Remediating Mediterranean soils focuses on moisture retention and building organic carbon. We apply composted woody mulch, inoculate with cover crop roots, and use biological biochar arrays to increase water retention during dry summers.",
+            soilStrategyIntro: getSoilStrategyIntro("Remediating Mediterranean soils focuses on moisture retention and building organic carbon. We apply composted woody mulch, inoculate with cover crop roots, and use biological biochar arrays to increase water retention during dry summers."),
             soilCrops: "drought-hardy Mediterranean crops",
             soilPhase2GreenCover: "Spanish broom, vetch, and subterranean clover",
             soilTableTitle: "Mediterranean Soil Suitability & Recommendations",
@@ -548,10 +648,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
     };
     const miniBoundaryPoints = getMiniBoundaryPoints();
 
-    const windDir = climate ? climate.windDirection : 45;
-    const windSpd = climate ? climate.windSpeed : 12.5;
     const windSector = getWindSector(windDir);
-    const windDirectionName = getWindDirectionName(windDir);
 
     const afternoonSunAzimuth = isNorthern ? 240 : 300;
     const afternoonSectorShort = isNorthern ? "WSW" : "WNW";
@@ -1160,9 +1257,9 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Text x={hX + 68} y={hY + 2} style={{ fontSize: 5, fill: '#15803d', fontFamily: 'Helvetica-Bold' }}>ZONE 3</Text>
                         </Svg>
                     </View>
-                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#ffffff' }}>
                         {maps?.concentricZoning ? (
-                            <Image src={maps.concentricZoning} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <Image src={maps.concentricZoning} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                             <Svg width="100%" height="100%" viewBox="0 0 200 160">
                                 {/* Blueprint background */}
@@ -1220,7 +1317,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                     Zone 0 (the residential structure) and Zone 1 (the immediate kitchen garden and seedling nursery) form the high-density core of the design. These sectors are visited multiple times daily, making them the ideal location for high-value crops, delicate herb beds, intensive composting, and seedling propagation.
                 </Text>
                 <Text style={styles.bodyText}>
-                    Design components in Zone 1 utilize zero-evaporation Olla irrigation (porous clay pots buried in the soil) and greywater diversion channels from the kitchen. The microclimate here is heavily regulated through overhead shade fabrics, vertical vine trellises, and wind-blocking boundary plantings to support intensive annual vegetable production.
+                    Design components in Zone 1 utilize {climateZone === 'Arid' ? 'zero-evaporation Olla irrigation (porous clay pots buried in the soil)' : climateZone === 'Tropical' ? 'raised planting beds to ensure good drainage' : 'drip lines and deep organic compost sheet mulch'} and greywater diversion channels from the kitchen. The microclimate here is heavily regulated through overhead shade fabrics, vertical vine trellises, and wind-blocking boundary plantings to support intensive annual vegetable production.
                 </Text>
                 <View style={styles.table}>
                   <View style={styles.tableHeaderRow}>
@@ -1231,7 +1328,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Kitchen Garden</Text>
                     <Text style={styles.tableCell}>Edible annuals, medicinal herbs, raised organic beds</Text>
-                    <Text style={styles.tableCell}>Olla irrigation, greywater pipes</Text>
+                    <Text style={styles.tableCell}>{climateZone === 'Arid' ? 'Olla irrigation, greywater pipes' : climateZone === 'Tropical' ? 'Raised beds, rain diversion channels' : 'Drip lines, compost tea'}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Nursery</Text>
@@ -1440,9 +1537,9 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             </Text>
                         </Svg>
                     </View>
-                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#ffffff' }}>
                         {maps?.waterHarvesting ? (
-                            <Image src={maps.waterHarvesting} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <Image src={maps.waterHarvesting} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                             <Svg width="100%" height="100%" viewBox="0 0 200 160">
                                 <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
@@ -1539,9 +1636,9 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Text x={hX + 80} y={hY + 4} style={{ fontSize: 4, fill: '#14532d' }}>COMPANIONS</Text>
                         </Svg>
                     </View>
-                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#ffffff' }}>
                         {maps?.gravityDrip ? (
-                            <Image src={maps.gravityDrip} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <Image src={maps.gravityDrip} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                             <Svg width="100%" height="100%" viewBox="0 0 200 160">
                                 <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
@@ -1646,9 +1743,9 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Text x={40 + scaleBarWidthSvg - 10} y={193} style={{ fontSize: 6, fill: '#1b4332' }}>{scaleMeters}m</Text>
                         </Svg>
                     </View>
-                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#ffffff' }}>
                         {maps?.contourSwales ? (
-                            <Image src={maps.contourSwales} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <Image src={maps.contourSwales} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                             <Svg width="100%" height="100%" viewBox="0 0 200 160">
                                 <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
@@ -1744,9 +1841,9 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                             <Path d={`M ${hX} ${hY} L ${hX + 25} ${hY + 12}`} fill="none" stroke="#10b981" strokeWidth="1.5" />
                         </Svg>
                     </View>
-                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#0f172a' }}>
+                    <View style={{ flex: 0.8, height: 160, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', backgroundColor: '#ffffff' }}>
                         {maps?.functionalConcept ? (
-                            <Image src={maps.functionalConcept} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <Image src={maps.functionalConcept} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                             <Svg width="100%" height="100%" viewBox="0 0 200 160">
                                 <Rect x="0" y="0" width="200" height="160" fill="#0f172a" rx="6" />
@@ -1827,9 +1924,9 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Text style={styles.bodyText}>
                     {activeDesign.guildLowerText}
                 </Text>
-                <View style={{ width: '100%', height: 160, borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', marginTop: 5, backgroundColor: '#0f172a', position: 'relative' }}>
+                <View style={{ width: '100%', height: 260, borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderStyle: 'solid', borderColor: '#cbd5e1', marginTop: 5, backgroundColor: '#ffffff', position: 'relative' }}>
                     {maps?.bananaGuild ? (
-                        <Image src={maps.bananaGuild} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <Image src={maps.bananaGuild} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     ) : (
                         <Svg width="100%" height="100%" viewBox="0 0 400 160">
                             {/* Blueprint background grid */}
@@ -1960,7 +2057,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="18 | Solar Dynamics" />
                 <Text style={styles.h1}>Master Plan Design & Solar Arrays</Text>
                 <Text style={styles.bodyText}>
-                    The final integrated Master Plan maps the layout of the property. The residential sector (Zone 0) is centered to allow easy access, and is supported by a solar array. The array is mounted with a 15-degree South tilt, maximizing year-round solar energy capture.
+                    The final integrated Master Plan maps the layout of the property. The residential sector (Zone 0) is centered to allow easy access, and is supported by a solar array. The array is mounted with an optimal {Math.round(Math.abs(latVal) * 0.85 + 10)}-degree {latVal >= 0 ? "South" : "North"} tilt, maximizing year-round solar energy capture for coordinates at {Math.abs(latVal).toFixed(4)}° {latVal >= 0 ? 'N' : 'S'}.
                 </Text>
                 <Text style={styles.bodyText}>
                     Surrounding zones transition outward: from intensive Zone 1 gardens, through Zone 2 and 3 agroforestry guilds, and finally to Zone 4 and 5 wild shelterbelts. This spatial organization channels external resources, establishing a resilient landscape design.
