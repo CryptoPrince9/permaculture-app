@@ -857,6 +857,59 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
 
     const activeDesign = designConfig[climateZone];
 
+    const tempIntegrationPlan = climateZone === 'Arid'
+        ? "Evaporation control, buried Ollas, stone mulch"
+        : climateZone === 'Tropical'
+        ? "Ventilated microclimates, raised beds, shade canopy"
+        : climateZone === 'Temperate'
+        ? "Thermal belt planting, frost pockets avoidance, mulching"
+        : "Dappled shading, summer woodchip mulching, heat-hardy crops";
+
+    const precipIntegrationPlan = climateZone === 'Arid'
+        ? "Clay Ollas, infiltration basins, contour swales"
+        : climateZone === 'Tropical'
+        ? "Monsoon drainage channels, raised beds, erosion groundcover"
+        : climateZone === 'Temperate'
+        ? "Keyline contour swales, deep organic compost sponge"
+        : "Contour swales, woodchip mulch, cistern storage buffer";
+
+    const windIntegrationPlan = climateZone === 'Arid'
+        ? `${windDirectionName} windbreak shelterbelts (${aridWind})`
+        : climateZone === 'Tropical'
+        ? `${windDirectionName} tropical shelterbelts (monsoon buffer)`
+        : climateZone === 'Temperate'
+        ? `${windDirectionName} conifer shelterbelt (cold winter buffer)`
+        : `${windDirectionName} windbreak (dry summer wind buffer)`;
+
+    const localWind = climateZone === 'Arid' ? aridWind : climateZone === 'Tropical' ? 'prevailing humid monsoon winds' : climateZone === 'Temperate' ? 'cold temperate winds' : 'hot, dry Mediterranean winds';
+    const localMaterials = climateZone === 'Arid' ? "local clay, stone mulch, and biochar" : climateZone === 'Tropical' ? "bamboo, coconut coir, and local compost" : climateZone === 'Temperate' ? "local woodchips, leaf mold, and straw mulch" : "local stone, olive prunings, and pine mulch";
+    
+    const waterResponse = climateZone === 'Arid' 
+        ? `Buried clay Ollas, first-flush roof capture, swales on contour, and a ${cistern.toLocaleString()}L cistern.`
+        : climateZone === 'Tropical'
+        ? `Monsoon drainage channels, raised beds, first-flush roof capture, and a ${cistern.toLocaleString()}L cistern.`
+        : climateZone === 'Temperate'
+        ? `Keyline swales, level infiltration basins, first-flush roof capture, and a ${cistern.toLocaleString()}L cistern.`
+        : `Contour infiltration swales, rainwater roof capture, and a ${cistern.toLocaleString()}L cistern.`;
+
+    const windResponse = climateZone === 'Arid'
+        ? `Multi-row windbreaks on the windward side utilizing ${aridPioneer.common} (${aridPioneer.name}) to buffer ${windDirectionName} winds.`
+        : climateZone === 'Tropical'
+        ? `Shelterbelts on the windward boundary using hardy tropical trees like Albizia lebbeck to buffer ${windDirectionName} winds.`
+        : climateZone === 'Temperate'
+        ? `Northern conifer shelterbelts and deciduous windbreaks to buffer cold ${windDirectionName} winds.`
+        : `Windward shelterbelts utilizing hardy evergreen species like Olive and Quercus to buffer dry ${windDirectionName} winds.`;
+
+    const cropResponse = climateZone === 'Arid'
+        ? `Syntropic guilds incorporating ${aridRegion === 'Sahelian' ? 'Baobab' : 'Desert Ironwood'} and Moringa.`
+        : climateZone === 'Tropical'
+        ? `Multi-layered agroforestry incorporating Mango, Banana, Ginger, and Vetiver grass.`
+        : climateZone === 'Temperate'
+        ? `Deciduous orchards pairing Apple with Comfrey, Clover, and berry shrubs.`
+        : `Drought-resilient guilds featuring Olive, Fig, Artichoke, and aromatic groundcovers.`;
+
+    const pioneerTrees = climateZone === 'Arid' ? "Acacia and Neem" : climateZone === 'Tropical' ? "Albizia and Cassia" : climateZone === 'Temperate' ? "Alder and Willow" : "Spanish Broom and Oak";
+
     const getMiniBoundaryPoints = () => {
         if (!boundaryCoords || boundaryCoords.length < 3) {
             return "10,10 40,10 40,40 10,40";
@@ -1179,10 +1232,10 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Header sectionTitle="02 | Client & Goals" />
                 <Text style={styles.h1}>Client Profile & Design Requirements</Text>
                 <Text style={styles.bodyText}>
-                    A series of semi-structured client interviews was conducted to establish key priorities, capital constraints, labor budgets, and desired yields. The property steward, {userData.clientName || "Ahmed Khalil"}, requested a robust, self-healing design that minimizes external inputs and maximizes resource loops. Key requirements include establishing a secure household water supply, protecting sensitive crops from the dry, desiccating Harmattan winds, and producing a diverse, nutrient-dense harvest of fruits, vegetables, and medicinal crops.
+                    A series of semi-structured client interviews was conducted to establish key priorities, capital constraints, labor budgets, and desired yields. The property steward, {userData.clientName || "Ahmed Khalil"}, requested a robust, self-healing design that minimizes external inputs and maximizes resource loops. Key requirements include establishing a secure household water supply, protecting sensitive crops from the dry, desiccating {localWind}, and producing a diverse, nutrient-dense harvest of fruits, vegetables, and medicinal crops.
                 </Text>
                 <Text style={styles.bodyText}>
-                    Through social permaculture principles, the design also addresses labor efficiency, staging works to align with seasonal cycles, and utilizing local materials such as Neem wood and biochar to reduce initial capital expenses. The table below correlates the primary client objectives with the specific ecological and structural solutions proposed in this landscape portfolio.
+                    Through social permaculture principles, the design also addresses labor efficiency, staging works to align with seasonal cycles, and utilizing local materials such as {localMaterials} to reduce initial capital expenses. The table below correlates the primary client objectives with the specific ecological and structural solutions proposed in this landscape portfolio.
                 </Text>
                 <View style={styles.table}>
                   <View style={styles.tableHeaderRow}>
@@ -1191,15 +1244,15 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>1. Water Sovereignty</Text>
-                    <Text style={styles.tableCell}>First flush roof capture, swales on contour, infiltration ponds.</Text>
+                    <Text style={styles.tableCell}>{waterResponse}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>2. Wind Protection</Text>
-                    <Text style={styles.tableCell}>Tiered NE Neem and Acacia tree shelterbelt blocks.</Text>
+                    <Text style={styles.tableCell}>{windResponse}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>3. Crop Abundance</Text>
-                    <Text style={styles.tableCell}>Syntropic guilds incorporating Baobab, Moringa, and Pigeon Pea.</Text>
+                    <Text style={styles.tableCell}>{cropResponse}</Text>
                   </View>
                 </View>
                 <Footer pageNum="3" />
@@ -1265,17 +1318,17 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Mean Temp</Text>
                     <Text style={styles.tableCell}>{climate ? `${safeFixed(climate.temperature, 1, "24.5")}°C` : "24.5°C"}</Text>
-                    <Text style={styles.tableCell}>Evaporation control, heavy organic mulch</Text>
+                    <Text style={styles.tableCell}>{tempIntegrationPlan}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Annual Precipitation</Text>
                     <Text style={styles.tableCell}>{climate ? `${safeFixed(climate.precipitation * 365, 0, "438")} mm/yr` : "438 mm/yr"}</Text>
-                    <Text style={styles.tableCell}>Swales on contour, active water retaining</Text>
+                    <Text style={styles.tableCell}>{precipIntegrationPlan}</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Max Wind Speed</Text>
                     <Text style={styles.tableCell}>{climate ? `${safeFixed(climate.windSpeed, 1, "12.5")} km/h` : "12.5 km/h"}</Text>
-                    <Text style={styles.tableCell}>NE windbreak shelterbelts (Harmattan wind)</Text>
+                    <Text style={styles.tableCell}>{windIntegrationPlan}</Text>
                   </View>
                 </View>
                 <Footer pageNum="5" />
@@ -1365,7 +1418,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                     Sector analysis maps incoming external energy forces (sunlight, wind directions, wildfire risks, and animal migration pathways) that flow through the property. The prevailing winds blowing from the {windDirectionName.toLowerCase()} (azimuth {safeFixed(windDir, 0)}°) are a significant design factor for crop yields and site moisture retention.
                 </Text>
                 <Text style={styles.bodyText}>
-                    To mitigate these factors, we implement a tiered windbreak shelterbelt on the windward ({windSector}) boundary, utilizing nitrogen-fixing, wind-tolerant pioneer trees such as Acacia and Neem. Afternoon high-heat vectors from the {afternoonSectorName} (azimuth {afternoonSunAzimuth}°) are managed through a cleared maintenance firebreak and heat-tolerant succulent plantings.
+                    To mitigate these factors, we implement a tiered windbreak shelterbelt on the windward ({windSector}) boundary, utilizing nitrogen-fixing, wind-tolerant pioneer trees such as {pioneerTrees}. Afternoon high-heat vectors from the {afternoonSectorName} (azimuth {afternoonSunAzimuth}°) are managed through a cleared maintenance firebreak and heat-tolerant succulent plantings.
                 </Text>
                 <View style={styles.table}>
                   <View style={styles.tableHeaderRow}>
@@ -2409,7 +2462,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={styles.tableCell}>Wet Season</Text>
-                    <Text style={styles.tableCell}>Clearing swale silt, pruning Moringa branch biomass (chop-and-drop)</Text>
+                    <Text style={styles.tableCell}>Clearing swale silt, pruning {climateZone === 'Arid' ? 'Moringa' : climateZone === 'Tropical' ? 'Banana/Jackfruit' : climateZone === 'Temperate' ? 'Currant/Comfrey' : 'Spanish Broom'} branch biomass (chop-and-drop)</Text>
                     <Text style={styles.tableCell}>Weekly</Text>
                   </View>
                 </View>

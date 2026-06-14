@@ -29,7 +29,11 @@ export function generateReportContent(
     soil: SoilData | null,
     ecology: EcologyData | null,
     lat?: number,
-    lng?: number
+    lng?: number,
+    config?: {
+        methodology: string;
+        financialStrategy: string[];
+    }
 ): GeneratedReport {
     const getAridRegionName = (latVal: number, lngVal: number): string => {
         if (latVal >= 11 && latVal <= 20 && lngVal >= -18 && lngVal <= 25) {
@@ -90,6 +94,52 @@ export function generateReportContent(
     const aridPioneer = getAridPioneerTreeName(latVal, lngVal);
     const slopeStr = elevation ? `${elevation.slope.toFixed(1)}%` : "1.2%";
 
+    const selectedMethod = config?.methodology || (
+        climateZone === 'Arid'
+            ? (annualPrecip < 300 ? 'Biosaline & Halophyte Systems' : 'Keyline Permaculture Design')
+            : absLat > 35
+            ? 'Miyawaki Afforestation'
+            : 'Syntropic Agroforestry'
+    );
+
+    const getDynamicMethodologyDescription = (method: string, zone: string, precip: number, pH: number, slope: number) => {
+        const base = `OBREDIM framework tailored for ${method}. `;
+        if (method === 'Biosaline & Halophyte Systems') {
+            return `${base}With a low annual rainfall of ${precip.toFixed(0)}mm and high evaporation, biosaline design leverages salt-tolerant halophytes (e.g., Atriplex, Distichlis) and porous clay Ollas. This limits soil water evaporation, prevents salt encrustation, and utilizes saline-tolerant soil microbiology.`;
+        }
+        if (method === 'Keyline Permaculture Design') {
+            return `${base}Calibrated for the site's slope of ${slope.toFixed(1)}% and rainfall of ${precip.toFixed(0)}mm. Keyline design maps contour lines at right angles to water flows, spreading concentrated runoff from valleys toward dry ridges. Subsoil ripping aerates and decompresses subsoil layers.`;
+        }
+        if (method === 'Miyawaki Afforestation') {
+            return `${base}Designed for the temperate moisture index (Lat: ${latVal.toFixed(2)}°, pH: ${pH.toFixed(1)}). Miyawaki afforestation focuses on planting ultra-dense, multi-layered native pioneer and climax trees in deeply composted soil to simulate natural forest succession rapidly.`;
+        }
+        if (method === 'Syntropic Agroforestry') {
+            return `${base}Optimized for the high-biomass potential of this ${zone.toLowerCase()} site (Rainfall: ${precip.toFixed(0)}mm). Syntropic design mimics natural forest stratification and succession. Pruning pioneer species deposits organic carbon on the soil floor, driving nutrient cycling.`;
+        }
+        return `${base}Grounded in standard broadacre permaculture zoning, mapping out intensive production close to Zone 0, and transitioning to keyline water harvesting and agroforestry in Zone 3 and 4.`;
+    };
+
+    const methodologyDescription = getDynamicMethodologyDescription(
+        selectedMethod,
+        climateZone,
+        annualPrecip,
+        soil ? soil.ph : 6.8,
+        elevation ? elevation.slope : 1.2
+    );
+
+    const strategies = config?.financialStrategy || [];
+    const isZeroCapex = strategies.includes('zero-capex');
+    const isMaxYield = strategies.includes('max-yield');
+    
+    let timeline = "";
+    if (isZeroCapex) {
+        timeline = "Zero-CAPEX: Phase 1 (M0-4): Hand-dug basins. Phase 2 (M4-8): Seed collection, local cuttings, biochar. Phase 3 (M8-12): Locally grafted multi-layered guilds, hand-watering.";
+    } else if (isMaxYield) {
+        timeline = `Commercial Max-Yield: Phase 1 (M0-2): Machine contour grading, automated ${precipVal < 1.5 ? 'drip lines' : 'drainage channels'}, swale excavation. Phase 2 (M2-4): Cover crops, nursery shelterbelts. Phase 3 (M4-12): Production crop guilds.`;
+    } else {
+        timeline = `Phased Bootstrapping: Phase 1 (M0-3): Zone 1 intensive gardens. Phase 2 (M3-6): Reinvesting crop surplus to finance Zone 2 drip lines and shelterbelts. Phase 3 (M6-12): Outer zones syntropic guilds.`;
+    }
+
     const report: GeneratedReport = {
         summary: `This report provides a preliminary permaculture site analysis for coordinates ${latVal.toFixed(5)}°, ${lngVal.toFixed(5)}° (${climateZone} system).`,
         waterHarvesting: "Data unavailable.",
@@ -102,14 +152,14 @@ export function generateReportContent(
         soilHealth: "Data unavailable.",
         sunStrategy: "Data unavailable.",
         ethics: "Earth Care, People Care, Fair Share.",
-        methodology: "OBREDIM (Observation, Boundary, Resources, Evaluation, Design, Implementation, Maintenance).",
+        methodology: methodologyDescription,
         clientGoals: "Autonomy, Food Security, and Regenerative surplus.",
         baseMapDescription: `Custom property boundary with a ${slopeStr} slope. Design paths, swales, and structures are aligned to follow contours.`,
         functionalGroupings: "Zone 0 (Homestead), Zone 1 (Kitchen Garden), Zone 2 (Orchards), Zone 3 (Agroforestry), Zone 4 (Semi-Wild), Zone 5 (Wild Buffer).",
         zonesDescription: `Zoning transitions outward from the Zone 0 homestead to Zone 5 wild corridors, optimizing daily travel times and energy inputs.`,
-        implementationTimeline: "Phase 1: Hydrology & Access (Months 0-3), Phase 2: Windbreaks & Soil prep (Months 3-6), Phase 3: Crop Guild Planting (Months 6-12).",
-        maintenancePlan: "Seasonal swale clearing, first-flush filter maintenance, and annual soil mulching.",
-        conclusion: `A resilient ${climateZone.toLowerCase()} landscape plan optimized for the unique microclimatic factors of the site.`,
+        implementationTimeline: timeline,
+        maintenancePlan: `Seasonal care plan: during the wet season, clear swale silt and prune support species. Dry season: clean first-flush filters and replenish organic mulch.`,
+        conclusion: `A resilient ${climateZone.toLowerCase()} landscape plan optimized for the unique microclimatic factors of the site using ${selectedMethod}.`,
     };
 
     if (climate) {

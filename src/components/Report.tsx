@@ -144,7 +144,7 @@ export default function Report({ location, boundaryCoords, userData, config }: R
           setSoil(s);
           setEcology(eco);
           setMaps(m || null);
-          setGeneratedReport(generateReportContent(c, e, s, eco, location.lat, location.lng));
+          setGeneratedReport(generateReportContent(c, e, s, eco, location.lat, location.lng, config));
           setFetchedLocation(location);
           
           addLog("SYSTEM RESYNC: Core databases mapped. 14-Page PDC Portfolio initialized gracefully.");
@@ -332,7 +332,7 @@ export default function Report({ location, boundaryCoords, userData, config }: R
             functionalConcept: `${origin}/images/functional_concept.jpg`
           };
           setMaps(fallbackMaps);
-          setGeneratedReport(generateReportContent(fallbackClimate, fallbackElevation, fallbackSoil, fallbackEcology, location.lat, location.lng));
+          setGeneratedReport(generateReportContent(fallbackClimate, fallbackElevation, fallbackSoil, fallbackEcology, location.lat, location.lng, config));
           setFetchedLocation(location);
           
           addLog(`SYSTEM SHIELD: ${zoneName} permaculture parameters locked. PDC Report successfully generated.`);
@@ -344,6 +344,12 @@ export default function Report({ location, boundaryCoords, userData, config }: R
       executePipeline();
     }
   }, [location]);
+
+  useEffect(() => {
+    if (fetchedLocation && (climate || elevation || soil || ecology)) {
+      setGeneratedReport(generateReportContent(climate, elevation, soil, ecology, fetchedLocation.lat, fetchedLocation.lng, config));
+    }
+  }, [climate, elevation, soil, ecology, fetchedLocation, config]);
 
   if (!location) {
     return (
