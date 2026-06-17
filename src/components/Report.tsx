@@ -418,32 +418,128 @@ export default function Report({ location, boundaryCoords, userData, config }: R
     { title: "Design Concept", content: generatedReport?.functionalGroupings },
     { title: "Zones & Hierarchy", content: generatedReport?.zonesDescription },
     { title: "Timeline", content: generatedReport?.implementationTimeline },
+    { 
+      title: "farmOS & Mapeo", 
+      content: (
+        <div className="space-y-4">
+          <p className="text-gray-700 leading-relaxed text-base">{generatedReport?.farmOSIntegration}</p>
+          <div className="bg-slate-900 text-slate-200 p-5 rounded-2xl font-mono text-xs select-all border border-slate-800 shadow-inner overflow-x-auto whitespace-pre">
+{`# farmOS Asset Ingest Command
+curl -X POST "https://myfarm.farmos.net/api/asset" \\
+  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -H "Content-Type: application/vnd.api+json" \\
+  -d '{
+    "data": {
+      "type": "asset--land",
+      "attributes": {
+        "name": "${(userData.projectName || 'Permaculture').replace(/"/g, '\\"') || 'Permaculture Plan'} Boundary",
+        "land_type": "property",
+        "geometry": "POLYGON ((${location ? `${location.lng - 0.00022} ${location.lat + 0.00045}, ${location.lng + 0.00022} ${location.lat + 0.00045}, ${location.lng + 0.00022} ${location.lat - 0.00045}, ${location.lng - 0.00022} ${location.lat - 0.00045}, ${location.lng - 0.00022} ${location.lat + 0.00045}` : ''}))"
+      }
+    }
+  }'`}
+          </div>
+          <p className="text-xs text-gray-500 italic">To import design sectors offline, download the GeoJSON payload and load it into the Mapeo Mobile configuration directory, or upload it to farmOS via the Land Manager panel.</p>
+        </div>
+      )
+    },
+    { 
+      title: "Kumu Systems", 
+      content: (
+        <div className="space-y-4">
+          <p className="text-gray-700 leading-relaxed text-base">{generatedReport?.kumuIntegration}</p>
+          <p className="font-bold text-gray-800 text-sm">Design Elements Mapping:</p>
+          <div className="grid grid-cols-2 gap-4 text-xs bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <div>
+              <p className="font-semibold text-emerald-700 mb-1">Elements (Nodes)</p>
+              <ul className="list-disc pl-4 space-y-1 text-gray-600">
+                <li>Zone 0 Homestead</li>
+                <li>Rainwater Cistern</li>
+                <li>Solar PV Array</li>
+                <li>Zone 1 Garden</li>
+                <li>Zone 2 Orchards</li>
+                <li>Zone 3 Pasture</li>
+                <li>Contour Swales &amp; Pond</li>
+                <li>Windbreak Shelterbelt</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold text-sky-700 mb-1">Flow Connections (Edges)</p>
+              <ul className="list-disc pl-4 space-y-1 text-gray-600">
+                <li>Roof Catchment (0 to Cistern)</li>
+                <li>Gravity Irrigation (Cistern to 1)</li>
+                <li>Energy Supply (PV to 0)</li>
+                <li>Subsoil Hydration (Swales to 2)</li>
+                <li>Grazing Manure Loop (3 to 2)</li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 italic">Use the "Export Kumu CSV" button to download the network mapping file, then load it on kumu.io via the import panel to visualize system loops.</p>
+        </div>
+      )
+    },
+    { 
+      title: "SAGA GIS CLI", 
+      content: (
+        <div className="space-y-4">
+          <p className="text-gray-700 leading-relaxed text-base">{generatedReport?.sagaIntegration}</p>
+          <div className="bg-slate-900 text-slate-200 p-5 rounded-2xl font-mono text-xs select-all border border-slate-800 shadow-inner overflow-x-auto whitespace-pre">
+{`:: SAGA GIS Command Line Processing (Wang & Liu Preprocessing & TWI)
+saga_cmd ta_preprocessor 4 -ELEV=dem.sgrd -FILLED=dem_filled.sgrd -MINSLOPE=0.01
+saga_cmd ta_morphometry 0 -ELEVATION=dem_filled.sgrd -SLOPE=slope.sgrd -ASPECT=aspect.sgrd
+saga_cmd ta_hydrology 15 -DEM=dem_filled.sgrd -TWI=twi.sgrd`}
+          </div>
+          <p className="text-xs text-gray-500 italic">Download the `saga_process.bat` script and place it in the same directory as your local Digital Elevation Model geotiff file (dem.tif). Double click the batch file to execute automated grid computations.</p>
+        </div>
+      )
+    }
   ];
 
   return (
     <div className="flex flex-col h-full bg-white rounded-3xl overflow-hidden">
       <header className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
         <div>
-          <h2 className="text-2xl font-black text-primary tracking-tight">PDC PORTFOLIO <span className="text-accent font-light">| 21 SECTIONS</span></h2>
+          <h2 className="text-2xl font-black text-primary tracking-tight">PDC PORTFOLIO <span className="text-accent font-light">| 29 PAGES</span></h2>
           <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mt-1">Generated for: {userData.projectName || "Unnamed Project"}</p>
         </div>
 
         {isClient && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 max-w-[850px] justify-end">
             <a 
               href={`/api/export-gis?lat=${location.lat}&lng=${location.lng}${boundaryCoords ? `&boundary=${encodeURIComponent(JSON.stringify(boundaryCoords))}` : ''}&project=${encodeURIComponent(userData.projectName || 'Permaculture')}`}
-              className="bg-emerald-600 text-white px-5 py-3 rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 shadow-xl shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
+              className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:scale-105 active:scale-95 shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
               Export KML
+            </a>
+            <a 
+              href={`/api/export-geojson?lat=${location.lat}&lng=${location.lng}${boundaryCoords ? `&boundary=${encodeURIComponent(JSON.stringify(boundaryCoords))}` : ''}&project=${encodeURIComponent(userData.projectName || 'Permaculture')}`}
+              className="bg-sky-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:scale-105 active:scale-95 shadow-md shadow-sky-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+              GeoJSON
+            </a>
+            <a 
+              href={`/api/export-kumu?lat=${location.lat}&lng=${location.lng}&project=${encodeURIComponent(userData.projectName || 'Permaculture')}`}
+              className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:scale-105 active:scale-95 shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+              Kumu CSV
+            </a>
+            <a 
+              href={`/api/export-saga?lat=${location.lat}&lng=${location.lng}&project=${encodeURIComponent(userData.projectName || 'Permaculture')}`}
+              className="bg-teal-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:scale-105 active:scale-95 shadow-md shadow-teal-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              SAGA Script
             </a>
             {!generatePDF ? (
               <button 
                 onClick={() => setGeneratePDF(true)}
-                className="bg-accent text-white px-6 py-3 rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 shadow-xl shadow-accent/20 transition-all flex items-center gap-2 cursor-pointer"
+                className="bg-accent text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:scale-105 active:scale-95 shadow-md shadow-accent/20 transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
               >
-                <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                Compile PDF Portfolio
+                <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Compile PDF
               </button>
             ) : (
               <PDFDownloadLink
@@ -463,13 +559,13 @@ export default function Report({ location, boundaryCoords, userData, config }: R
                   />
                 }
                 fileName={`${(userData?.projectName || '').trim().replace(/\s+/g, '_') || 'Permaculture'}_PDC_Portfolio.pdf`}
-                className="group relative inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary/20"
+                className="group relative inline-flex items-center gap-1.5 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 shadow-md shadow-primary/20"
               >
                 {/* @ts-ignore */}
                 {({ loading }) => (
                     <>
-                        <svg className="w-5 h-5 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                        {loading ? 'Compiling PDF...' : 'Download Master PDF'}
+                        <svg className="w-4 h-4 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        {loading ? 'Compiling...' : 'Download PDF'}
                     </>
                 )}
               </PDFDownloadLink>
@@ -480,25 +576,25 @@ export default function Report({ location, boundaryCoords, userData, config }: R
 
       <div className="flex-1 flex overflow-hidden">
         {/* Section Tabs */}
-        <nav className="w-64 bg-gray-50/30 border-right border-gray-100 p-4 overflow-y-auto space-y-2">
+        <nav className="w-64 bg-gray-50/30 border-r border-gray-100 p-4 overflow-y-auto space-y-2">
             {sections.map((s, idx) => (
                 <button
                     key={idx}
                     onClick={() => setActiveSection(idx)}
                     className={`w-full text-left p-4 rounded-xl text-sm font-bold transition-all ${activeSection === idx ? 'bg-primary text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100'}`}
                 >
-                    <span className="block text-[10px] opacity-50 mb-1 uppercase tracking-tighter">Section 0{idx + 1}</span>
+                    <span className="block text-[10px] opacity-50 mb-1 uppercase tracking-tighter">Section {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}</span>
                     {s.title}
                 </button>
             ))}
         </nav>
 
         {/* Section Content */}
-        <div className="flex-1 p-10 overflow-y-auto">
+        <div className="flex-1 p-10 overflow-y-auto bg-slate-50/40">
             <div className="max-w-2xl">
-                <span className="text-accent font-black text-6xl opacity-10">0{activeSection + 1}</span>
+                <span className="text-accent font-black text-6xl opacity-10">{activeSection + 1 < 10 ? `0${activeSection + 1}` : activeSection + 1}</span>
                 <h3 className="text-3xl font-black text-primary -mt-8 mb-6">{sections[activeSection].title}</h3>
-                <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 leading-relaxed text-gray-700 text-lg shadow-inner">
+                <div className="bg-white p-8 rounded-3xl border border-gray-100 leading-relaxed text-gray-700 text-lg shadow-sm">
                     {sections[activeSection].content}
                 </div>
 
@@ -506,13 +602,22 @@ export default function Report({ location, boundaryCoords, userData, config }: R
                     <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Technical Metric</p>
                         <p className="text-2xl font-black text-primary">
-                            {activeSection === 2 ? `${climate?.precipitation} mm` : activeSection === 3 ? `${soil?.ph} pH` : activeSection === 0 ? `${elevation?.elevation} m` : 'N/A'}
+                            {activeSection === 2 ? `${(climate?.precipitation || 0).toFixed(2)} mm` : 
+                             activeSection === 3 ? `${soil?.ph} pH` : 
+                             activeSection === 0 ? `${elevation?.elevation} m` : 
+                             activeSection === 7 ? `farmOS Ingest` :
+                             activeSection === 8 ? `10 Flow Connections` :
+                             activeSection === 9 ? `SAGA TWI Grid` : 'N/A'}
                         </p>
                     </div>
                     <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Design Strategy</p>
                         <p className="text-sm font-bold text-gray-600">
-                            {activeSection === 2 ? 'Passive Water Harvesting' : activeSection === 3 ? 'Soil Carbon Sequestration' : 'Topographic Integration'}
+                            {activeSection === 2 ? 'Passive Water Harvesting' : 
+                             activeSection === 3 ? 'Soil Carbon Sequestration' : 
+                             activeSection === 7 ? 'Decentralized Logging' :
+                             activeSection === 8 ? 'Systems Feedbacks' :
+                             activeSection === 9 ? 'Topographic Wetness Index' : 'Topographic Integration'}
                         </p>
                     </div>
                 </div>

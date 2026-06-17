@@ -2469,9 +2469,157 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                 <Footer pageNum="24" />
             </Page>
 
-            {/* PAGE 25: QGIS & Google Earth Integration Guide (Sec 20b) */}
+            {/* PAGE 25: farmOS & Mapeo Open-Source Registries (Sec 20b) */}
             <Page size="A4" style={styles.page}>
-                <Header sectionTitle="20b | QGIS & Earth" />
+                <Header sectionTitle="20b | farmOS & Mapeo" />
+                <Text style={styles.h1}>farmOS & Mapeo Open-Source Registries</Text>
+                <Text style={styles.bodyText}>
+                    To support long-term decentralized record-keeping, the property design is structured to integrate directly with open-source farm registries. farmOS provides a standard database schema to log crop rotations, soil tests, input applications, and harvest yields, ensuring data sovereignty.
+                </Text>
+                <Text style={styles.bodyText}>
+                    Using the exported GeoJSON asset payload, all permaculture design sectors can be uploaded as farmOS assets. The boundary is mapped as a parent Land asset, while the internal zones are registered as child Land assets with specific types (e.g. Zone 1 as a Garden, Zone 2 as an Orchard, and Zone 3 as a Pasture). Water systems like the infiltration pond and swales are logged as Water and Infrastructure assets.
+                </Text>
+                <Text style={styles.bodyText}>
+                    For field recording, Mapeo allows offline, decentralized mapping using mobile devices. Field managers can log local species observations, erosion events, and soil conditions without internet access. These field observations can then be synced peer-to-peer and exported to farmOS logs to document the site's ecological progress.
+                </Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={styles.tableCellHeader}>Asset Name</Text>
+                    <Text style={styles.tableCellHeader}>farmOS Asset Type</Text>
+                    <Text style={styles.tableCellHeader}>Mapeo Field Log Property</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Property Boundary</Text>
+                    <Text style={styles.tableCell}>Land: Property</Text>
+                    <Text style={styles.tableCell}>Area Perimeter boundary</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Zone 1 Kitchen Garden</Text>
+                    <Text style={styles.tableCell}>Land: Garden</Text>
+                    <Text style={styles.tableCell}>Crop sowing &amp; transplanting logs</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Zone 2 Orchards</Text>
+                    <Text style={styles.tableCell}>Land: Orchard</Text>
+                    <Text style={styles.tableCell}>Tree planting, grafting, and harvest yields</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Zone 3 Pasture</Text>
+                    <Text style={styles.tableCell}>Land: Pasture</Text>
+                    <Text style={styles.tableCell}>Rotational grazing cycle periods</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Contour Swales &amp; Pond</Text>
+                    <Text style={styles.tableCell}>Water: Swale / Pond</Text>
+                    <Text style={styles.tableCell}>Hydrology monitoring &amp; maintenance logs</Text>
+                  </View>
+                </View>
+                <Text style={styles.caption}>Table 12: farmOS asset mapping structure and Mapeo field logging variables.</Text>
+                <Footer pageNum="25" />
+            </Page>
+
+            {/* PAGE 26: Kumu Systems Ecology & Relationship Modeling (Sec 20c) */}
+            <Page size="A4" style={styles.page}>
+                <Header sectionTitle="20c | Kumu Systems Map" />
+                <Text style={styles.h1}>Kumu Systems Ecology &amp; Relationship Modeling</Text>
+                <Text style={styles.bodyText}>
+                    Permaculture designs rely on the relationships between elements rather than the elements in isolation. Kumu provides a platform to model these system connections, highlighting resource loops, feedback loops, and potential leverage points.
+                </Text>
+                <Text style={styles.bodyText}>
+                    The exported Kumu CSV compiles the elements (nodes) and connections (edges) of the landscape design. By tracing energy, water, nutrients, and labor flow lines, designers can identify system dependencies. For example, the homestead (Zone 0) captures roof water which is stored in the cistern to irrigate the kitchen garden (Zone 1). The garden, in turn, returns fresh vegetables and compostable kitchen waste, closing the loop.
+                </Text>
+                <Text style={styles.bodyText}>
+                    In the pasture (Zone 3), rotational animal grazing deposits manure that builds soil biology. This nutrient cycle is directed to feed the fruit orchards (Zone 2). This system-level visibility helps identify deficiencies, such as open nutrient loops, allowing developers to design intervention pathways.
+                </Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={styles.tableCellHeader}>Flow Connection</Text>
+                    <Text style={styles.tableCellHeader}>Source &amp; Destination</Text>
+                    <Text style={styles.tableCellHeader}>Ecology Loop Type</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Roof Water Catchment</Text>
+                    <Text style={styles.tableCell}>Homestead (0) to Cistern</Text>
+                    <Text style={styles.tableCell}>Water Harvesting loop</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Gravity Drip Irrigation</Text>
+                    <Text style={styles.tableCell}>Cistern to Zone 1 Garden</Text>
+                    <Text style={styles.tableCell}>Resource Allocation loop</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Compost &amp; Daily Labor</Text>
+                    <Text style={styles.tableCell}>Homestead (0) to Zone 1</Text>
+                    <Text style={styles.tableCell}>Nutrient &amp; Labor loop</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Swale Subsoil Infiltration</Text>
+                    <Text style={styles.tableCell}>Swales to Zone 2 Orchards</Text>
+                    <Text style={styles.tableCell}>Passive Hydration loop</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>Animal Manure Deposition</Text>
+                    <Text style={styles.tableCell}>Zone 3 Animals to Orchards</Text>
+                    <Text style={styles.tableCell}>Nutrient Cycling loop</Text>
+                  </View>
+                </View>
+                <Text style={styles.caption}>Table 13: Kumu systems-ecology relationship definitions and loops.</Text>
+                <Footer pageNum="26" />
+            </Page>
+
+            {/* PAGE 27: SAGA GIS Hydrological & Terrain Modeling (Sec 20d) */}
+            <Page size="A4" style={styles.page}>
+                <Header sectionTitle="20d | SAGA GIS CLI" />
+                <Text style={styles.h1}>SAGA GIS Hydrological &amp; Terrain Modeling</Text>
+                <Text style={styles.bodyText}>
+                    While standard GIS platforms handle layout mapping, advanced hydrology and land-shaping require raster calculations. SAGA GIS (System for Automated Geoscientific Analyses) provides command-line modules to perform morphometric and hydrological grid operations on Digital Elevation Models (DEMs).
+                </Text>
+                <Text style={styles.bodyText}>
+                    The exported `saga_process.bat` script automates these operations. It uses the Wang &amp; Liu preprocessor module (`ta_preprocessor 4`) to identify and fill depressions, preventing sink holes from trapping virtual water particles. Next, it calculates the terrain slope and flow accumulation grids.
+                </Text>
+                <Text style={styles.bodyText}>
+                    Finally, it runs the Topographic Wetness Index (TWI) module (`ta_hydrology 15`). TWI estimates soil moisture distribution based on upslope contributing area and local slope tangent:
+                </Text>
+                <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: '#1b4332', marginVertical: 8, textAlign: 'center' }}>
+                    TWI = ln( a / tan(b) )
+                </Text>
+                <Text style={styles.bodyText}>
+                    Where 'a' is the specific catchment area and 'b' is the local slope slope angle. High TWI zones indicate natural swales, gullies, and wet zones, indicating optimal locations for infiltration ponds and primary water harvesting swale trenches.
+                </Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={styles.tableCellHeader}>SAGA cmd Module</Text>
+                    <Text style={styles.tableCellHeader}>Command Flag</Text>
+                    <Text style={styles.tableCellHeader}>Hydrological Output</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>ta_preprocessor 4</Text>
+                    <Text style={styles.tableCell}>-ELEV -FILLED -MINSLOPE</Text>
+                    <Text style={styles.tableCell}>Hydrologically sound filled DEM</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>ta_morphometry 0</Text>
+                    <Text style={styles.tableCell}>-ELEVATION -SLOPE -ASPECT</Text>
+                    <Text style={styles.tableCell}>Local terrain slope angle &amp; solar aspect</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>ta_hydrology 0</Text>
+                    <Text style={styles.tableCell}>-ELEVATION -FLOW</Text>
+                    <Text style={styles.tableCell}>Flow accumulation paths and drainage vectors</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>ta_hydrology 15</Text>
+                    <Text style={styles.tableCell}>-DEM -TWI</Text>
+                    <Text style={styles.tableCell}>Topographic Wetness Index soil moisture grid</Text>
+                  </View>
+                </View>
+                <Text style={styles.caption}>Table 14: SAGA GIS command line modules and terrain analysis outputs.</Text>
+                <Footer pageNum="27" />
+            </Page>
+
+            {/* PAGE 28: QGIS & Google Earth Integration Guide (Sec 20e) */}
+            <Page size="A4" style={styles.page}>
+                <Header sectionTitle="20e | QGIS & Earth" />
                 <Text style={styles.h1}>QGIS & Google Earth Integration Guide</Text>
                 <Text style={styles.bodyText}>
                     This design package includes a fully compatible GIS vector payload in KML format. To integrate these regenerative design layouts back into professional GIS workflows, follow these instructions:
@@ -2493,10 +2641,10 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                     - qgis2threejs: Export your 3D design layers as interactive HTML/Web GL files.
                     - GRASS GIS (r.watershed): Run hydrological models on your DEM to calculate watershed boundaries, flow accumulation, and channel drainage lines to calibrate the water harvesting potential of the swale berms.
                 </Text>
-                <Footer pageNum="25" />
+                <Footer pageNum="28" />
             </Page>
 
-            {/* PAGE 26: Citations, References & Approval Signatures (Sec 21) */}
+            {/* PAGE 29: Citations, References & Approval Signatures (Sec 21) */}
             <Page size="A4" style={styles.page}>
                 <Header sectionTitle="21 | Citations" />
                 <Text style={styles.h1}>Academic References & Signatures</Text>
@@ -2524,7 +2672,7 @@ const PDFReport = ({ location, boundaryCoords, climate, elevation, soil, ecology
                         Validated for dynamic, decentralized dryland restoration. Earth Care, People Care, Fair Share.
                     </Text>
                 </View>
-                <Footer pageNum="26" />
+                <Footer pageNum="29" />
             </Page>
         </Document>
     );

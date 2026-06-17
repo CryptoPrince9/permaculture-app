@@ -52,7 +52,10 @@ const mockData = {
         zonesDescription: "Zones 0-5 implemented.",
         implementationTimeline: "12-month primary roll-out.",
         maintenancePlan: "Seasonal swale maintenance.",
-        conclusion: "Ready for deployment."
+        conclusion: "Ready for deployment.",
+        farmOSIntegration: "farmOS registries configured for property boundary.",
+        kumuIntegration: "Kumu systems map traces water, energy, and nutrient loops.",
+        sagaIntegration: "SAGA GIS terrain analysis script automates hydrology and TWI grids."
     },
     maps: null
 };
