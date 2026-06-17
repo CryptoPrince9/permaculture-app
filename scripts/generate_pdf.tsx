@@ -72,15 +72,58 @@ async function generate() {
             }
             return '';
         };
-        
+
+        const fetchBase64Image = async (url: string): Promise<string> => {
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+                if (res.ok) {
+                    const buffer = await res.arrayBuffer();
+                    const base64 = Buffer.from(buffer).toString('base64');
+                    const contentType = res.headers.get('content-type') || 'image/jpeg';
+                    return `data:${contentType};base64,${base64}`;
+                }
+            } catch (err) {
+                console.error('Error fetching map:', url, err);
+            }
+            return '';
+        };
+
+        // Bounding box calculations around Heaven's Gate coordinates (14.4587, -16.0126)
+        // Enforce minimum bounding box of 0.02 degrees to avoid ArcGIS 500 errors
+        const lat = 14.4587;
+        const lng = -16.0126;
+        const minBoxSize = 0.02;
+        const halfSize = minBoxSize / 2;
+        const minLat = lat - halfSize;
+        const maxLat = lat + halfSize;
+        const minLng = lng - halfSize;
+        const maxLng = lng + halfSize;
+
+        const satUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=800,500&format=jpg&f=image`;
+        const topoUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=800,500&format=jpg&f=image`;
+        const streetUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=800,500&format=jpg&f=image`;
+        const reliefUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=800,500&format=jpg&f=image`;
+
+        console.log('Fetching high-res ArcGIS map imagery...');
+        const [satB64, topoB64, streetB64, reliefB64] = await Promise.all([
+            fetchBase64Image(satUrl),
+            fetchBase64Image(topoUrl),
+            fetchBase64Image(streetUrl),
+            fetchBase64Image(reliefUrl)
+        ]);
+
         const testMockData = {
             ...mockData,
             maps: {
-                satelliteMap: '',
-                topoMap: '',
-                streetMap: '',
-                hillshadeMap: '',
-                bananaGuild: loadMockAsset('nano_banana_guild.jpg'),
+                satelliteMap: satB64,
+                topoMap: topoB64,
+                streetMap: streetB64,
+                hillshadeMap: reliefB64,
+                bananaGuild: loadMockAsset('nano_banana_guild.png'),
                 waterHarvesting: loadMockAsset('water_harvesting.jpg'),
                 gravityDrip: loadMockAsset('gravity_drip.jpg'),
                 contourSwales: loadMockAsset('contour_swales.jpg'),

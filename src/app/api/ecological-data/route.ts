@@ -414,6 +414,21 @@ export async function GET(request: Request) {
           }
         }
 
+        // Enforce a minimum bounding box size of 0.02 degrees (~2.2km) to prevent ArcGIS export errors
+        const minBoxSize = 0.02;
+        const currentLatDiff = maxLat - minLat;
+        if (currentLatDiff < minBoxSize) {
+          const pad = (minBoxSize - currentLatDiff) / 2;
+          minLat -= pad;
+          maxLat += pad;
+        }
+        const currentLngDiff = maxLng - minLng;
+        if (currentLngDiff < minBoxSize) {
+          const pad = (minBoxSize - currentLngDiff) / 2;
+          minLng -= pad;
+          maxLng += pad;
+        }
+
         const satUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=800,500&format=jpg&f=image`;
         const topoUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=800,500&format=jpg&f=image`;
         const streetUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=800,500&format=jpg&f=image`;
