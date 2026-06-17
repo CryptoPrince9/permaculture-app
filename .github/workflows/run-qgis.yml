@@ -21,6 +21,8 @@ on:
 jobs:
   run-gis:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: qgis/qgis:release-3_28  # Uses the official LTS QGIS headless Docker image
       options: --user root
