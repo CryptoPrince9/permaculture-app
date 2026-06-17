@@ -112,16 +112,42 @@ export default function Home() {
             const parsed = coords.map((c: any) => ({ lat: c[1], lng: c[0] }));
             setBoundaryCoords(parsed);
             calculateMetrics(parsed);
-            notify("GeoJSON boundary uploaded successfully!", "success");
+            
+            // Calculate boundary centroid to center map
+            let sumLat = 0;
+            let sumLng = 0;
+            parsed.forEach(c => {
+              sumLat += c.lat;
+              sumLng += c.lng;
+            });
+            const center = { lat: sumLat / parsed.length, lng: sumLng / parsed.length };
+            setLocation(center);
+
+            notify("GeoJSON boundary uploaded successfully! Map centered on property.", "success");
           } else {
             notify("No valid Polygon coordinates found in GeoJSON.", "error");
           }
         } else if (file.name.endsWith('.kml')) {
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(text, "text/xml");
-          const coordNodes = xmlDoc.getElementsByTagName("coordinates");
-          if (coordNodes.length > 0) {
-            const coordText = coordNodes[0].textContent || '';
+          
+          // Look for Polygon coordinates first to ignore Zone 0 and other Points
+          const polygonNodes = xmlDoc.getElementsByTagName("Polygon");
+          let coordText = '';
+          if (polygonNodes.length > 0) {
+            const coordNode = polygonNodes[0].getElementsByTagName("coordinates")[0];
+            if (coordNode) coordText = coordNode.textContent || '';
+          }
+          
+          // Fallback to first coordinates tag
+          if (!coordText) {
+            const coordNodes = xmlDoc.getElementsByTagName("coordinates");
+            if (coordNodes.length > 0) {
+              coordText = coordNodes[0].textContent || '';
+            }
+          }
+
+          if (coordText) {
             const pairs = coordText.trim().split(/\s+/);
             const parsed = pairs.map(p => {
               const parts = p.split(',');
@@ -131,7 +157,18 @@ export default function Home() {
             if (parsed.length >= 3) {
               setBoundaryCoords(parsed);
               calculateMetrics(parsed);
-              notify("KML boundary uploaded successfully!", "success");
+              
+              // Calculate boundary centroid to center map
+              let sumLat = 0;
+              let sumLng = 0;
+              parsed.forEach(c => {
+                sumLat += c.lat;
+                sumLng += c.lng;
+              });
+              const center = { lat: sumLat / parsed.length, lng: sumLng / parsed.length };
+              setLocation(center);
+
+              notify("KML boundary uploaded successfully! Map centered on property.", "success");
             } else {
               notify("KML coordinates did not contain enough valid points.", "error");
             }

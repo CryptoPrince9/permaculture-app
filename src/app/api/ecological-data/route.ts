@@ -469,6 +469,8 @@ export async function GET(request: Request) {
           guildFileName = 'temperate_apple_guild.png';
         } else if (climateZone === 'Subtropical') {
           guildFileName = 'mediterranean_olive_guild.png';
+        } else if (climateZone === 'Arid') {
+          guildFileName = 'arid_acacia_guild.png';
         }
 
         maps = {
@@ -477,11 +479,11 @@ export async function GET(request: Request) {
           streetMap: streetB64,
           hillshadeMap: reliefB64,
           bananaGuild: `${origin}/images/${guildFileName}`,
-          waterHarvesting: `${origin}/images/water_harvesting.jpg`,
-          gravityDrip: `${origin}/images/gravity_drip.jpg`,
-          contourSwales: `${origin}/images/contour_swales.jpg`,
-          concentricZoning: `${origin}/images/concentric_zoning.jpg`,
-          functionalConcept: `${origin}/images/functional_concept.jpg`
+          waterHarvesting: '',
+          gravityDrip: '',
+          contourSwales: '',
+          concentricZoning: '',
+          functionalConcept: ''
         };
       } catch (err) {
         console.error('Server-side map compilation issue:', err);
