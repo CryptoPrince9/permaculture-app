@@ -128,7 +128,8 @@ export default function Report({ location, boundaryCoords, userData, config }: R
           addLog("STAGE 5: Finalizing iNaturalist observation counts & assembling design report...");
 
           const boundaryQuery = boundaryCoords ? `&boundary=${encodeURIComponent(JSON.stringify(boundaryCoords))}` : '';
-          const res = await fetch(`/api/ecological-data?lat=${location.lat}&lng=${location.lng}${boundaryQuery}`);
+          const projectQuery = userData.projectName ? `&projectName=${encodeURIComponent(userData.projectName)}` : '';
+          const res = await fetch(`/api/ecological-data?lat=${location.lat}&lng=${location.lng}${boundaryQuery}${projectQuery}`);
           if (!res.ok) throw new Error("Unified geodata proxy API returned non-ok status");
           const data = await res.json();
           if (data.error) throw new Error(data.error);

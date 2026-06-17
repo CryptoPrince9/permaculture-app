@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const latParam = searchParams.get('lat');
     const lngParam = searchParams.get('lng');
     const boundaryParam = searchParams.get('boundary');
+    const projectParam = searchParams.get('projectName');
 
     if (!latParam || !lngParam) {
       return NextResponse.json({ error: 'Missing lat or lng parameters' }, { status: 400 });
@@ -473,17 +474,31 @@ export async function GET(request: Request) {
           guildFileName = 'arid_acacia_guild.png';
         }
 
+        const isHeavensGate = projectParam && projectParam.toLowerCase().includes("heaven");
+
         maps = {
           satelliteMap: satB64,
           topoMap: topoB64,
           streetMap: streetB64,
           hillshadeMap: reliefB64,
-          bananaGuild: `${origin}/images/${guildFileName}`,
-          waterHarvesting: `${origin}/images/water_harvesting.jpg`,
-          gravityDrip: `${origin}/images/gravity_drip.jpg`,
-          contourSwales: `${origin}/images/contour_swales.jpg`,
-          concentricZoning: `${origin}/images/concentric_zoning.jpg`,
-          functionalConcept: `${origin}/images/functional_concept.jpg`
+          bananaGuild: isHeavensGate 
+            ? `${origin}/images/heavens_gate_arid_acacia_guild.png`
+            : `${origin}/images/${guildFileName}`,
+          waterHarvesting: isHeavensGate
+            ? `${origin}/images/heavens_gate_water_harvesting.png`
+            : `${origin}/images/water_harvesting.jpg`,
+          gravityDrip: isHeavensGate
+            ? `${origin}/images/heavens_gate_gravity_drip.png`
+            : `${origin}/images/gravity_drip.jpg`,
+          contourSwales: isHeavensGate
+            ? `${origin}/images/heavens_gate_contour_swales.png`
+            : `${origin}/images/contour_swales.jpg`,
+          concentricZoning: isHeavensGate
+            ? `${origin}/images/heavens_gate_concentric_zoning.png`
+            : `${origin}/images/concentric_zoning.jpg`,
+          functionalConcept: isHeavensGate
+            ? `${origin}/images/heavens_gate_functional_concept.png`
+            : `${origin}/images/functional_concept.jpg`
         };
       } catch (err) {
         console.error('Server-side map compilation issue:', err);

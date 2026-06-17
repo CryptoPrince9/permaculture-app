@@ -178,12 +178,12 @@ async function generate() {
         topoMap: topoB64,
         streetMap: streetB64,
         hillshadeMap: reliefB64,
-        bananaGuild: loadMockAsset('arid_acacia_guild.png'),
-        waterHarvesting: loadMockAsset('water_harvesting.jpg'),
-        gravityDrip: loadMockAsset('gravity_drip.jpg'),
-        contourSwales: loadMockAsset('contour_swales.jpg'),
-        concentricZoning: loadMockAsset('concentric_zoning.jpg'),
-        functionalConcept: loadMockAsset('functional_concept.jpg')
+        bananaGuild: loadMockAsset('heavens_gate_arid_acacia_guild.png'),
+        waterHarvesting: loadMockAsset('heavens_gate_water_harvesting.png'),
+        gravityDrip: loadMockAsset('heavens_gate_gravity_drip.png'),
+        contourSwales: loadMockAsset('heavens_gate_contour_swales.png'),
+        concentricZoning: loadMockAsset('heavens_gate_concentric_zoning.png'),
+        functionalConcept: loadMockAsset('heavens_gate_functional_concept.png')
     };
 
     // Generate sunData
