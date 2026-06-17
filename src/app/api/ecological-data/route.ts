@@ -479,11 +479,11 @@ export async function GET(request: Request) {
           streetMap: streetB64,
           hillshadeMap: reliefB64,
           bananaGuild: `${origin}/images/${guildFileName}`,
-          waterHarvesting: '',
-          gravityDrip: '',
-          contourSwales: '',
-          concentricZoning: '',
-          functionalConcept: ''
+          waterHarvesting: `${origin}/images/water_harvesting.jpg`,
+          gravityDrip: `${origin}/images/gravity_drip.jpg`,
+          contourSwales: `${origin}/images/contour_swales.jpg`,
+          concentricZoning: `${origin}/images/concentric_zoning.jpg`,
+          functionalConcept: `${origin}/images/functional_concept.jpg`
         };
       } catch (err) {
         console.error('Server-side map compilation issue:', err);

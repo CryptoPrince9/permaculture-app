@@ -179,11 +179,11 @@ async function generate() {
         streetMap: streetB64,
         hillshadeMap: reliefB64,
         bananaGuild: loadMockAsset('arid_acacia_guild.png'),
-        waterHarvesting: '',
-        gravityDrip: '',
-        contourSwales: '',
-        concentricZoning: '',
-        functionalConcept: ''
+        waterHarvesting: loadMockAsset('water_harvesting.jpg'),
+        gravityDrip: loadMockAsset('gravity_drip.jpg'),
+        contourSwales: loadMockAsset('contour_swales.jpg'),
+        concentricZoning: loadMockAsset('concentric_zoning.jpg'),
+        functionalConcept: loadMockAsset('functional_concept.jpg')
     };
 
     // Generate sunData
